@@ -65,10 +65,10 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
     return True
     
     
-def createTrainingData(orignePositiveImagePath, origenNegativeImagePath, outputPositiveImagePath, outputNegativeImagePath):
+def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputPositiveImagePath, outputNegativeImagePath):
     
     # get image files by classes
-    positiveImageFiles = [f for f in listdir(orignePositiveImagePath) if (isfile(join(orignePositiveImagePath, f)))]
+    positiveImageFiles = [f for f in listdir(origenPositiveImagePath) if (isfile(join(origenPositiveImagePath, f)))]
     negativeImageFiles = [f for f in listdir(origenNegativeImagePath) if (isfile(join(origenNegativeImagePath, f)))]
 
     positiveCount = len(positiveImageFiles)
