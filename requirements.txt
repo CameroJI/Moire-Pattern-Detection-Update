@@ -1,0 +1,8 @@
+keras
+tensorflow
+Pillow
+PyWavelets
+scikit-learn
+scikit-image
+np_utils
+creme
