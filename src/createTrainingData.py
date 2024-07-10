@@ -88,7 +88,7 @@ def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputP
 
     # create positive training images
     for f in positiveImageFiles:
-        ret = augmentAndTransformImage(f, orignePositiveImagePath, outputPositiveImagePath)
+        ret = augmentAndTransformImage(f, origenPositiveImagePath, outputPositiveImagePath)
         if ret is None:
             continue
         Kpositive += 3
