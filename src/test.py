@@ -44,7 +44,7 @@ def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, h
     
     for i in range(steps):
         start, end = defineEpochRange(i, batch_size, n)
-        print(f"Training {end - start} images.", end='\t')
+        print(f"Testing {end - start} images.", end='\t')
         print(f'start: {start}\tend: {end}\tn:{len(listInput)}')
         
         X_LL_test, X_LH_test, X_HL_test, X_HH_test, Y_test = getEvaluationBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
