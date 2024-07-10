@@ -2,7 +2,6 @@ import sys
 import argparse
 from PIL import Image
 from PIL import ImageOps
-import random
 import sys
 import os
 
@@ -11,29 +10,14 @@ from os.path import isfile, join
 from PIL import Image
 from haar2D import fwdHaarDWT2D
 
-#The training images need to be put in two folders. positiveImages and negativeImages. positiveImages are the images which are captured from the display devices and has the presence of stron or weak Moiré patterms in it. negativeImages are the ones without Moiré Patterns (i.e. the images which are not captured from the display devices)
-
-
-#folders to store training data
-positiveTrainImagePath = ''
-negativeTrainImagePath = ''
-
 def main(args):
+    origenPositiveImages = (args.origenPositiveImages)
+    origenNegativeImages = (args.origenNegativeImages)
     
-    global positiveTrainImagePath
-    global negativeTrainImagePath
+    outputPositiveImages = (args.outputPositiveImages)
+    outputNegativeImages = (args.outputNegativeImages)
     
-    positiveImagePath = (args.positiveImages)
-    negativeImagePath = (args.negativeImages)
-    
-    if (args.train == 0):
-        positiveTrainImagePath = './trainDataPositive'
-        negativeTrainImagePath = './trainDataNegative'
-    else:
-        positiveTrainImagePath = './testDataPositive'
-        negativeTrainImagePath = './testDataNegative'
-        
-    createTrainingData(positiveImagePath, negativeImagePath)
+    createTrainingData(origenPositiveImages, origenNegativeImages, outputPositiveImages, outputNegativeImages)
 
     
 #The wavelet decomposed images are the transformed images representing the spatial and the frequency information of the image. These images are stored as 'tiff' in the disk, to preserve that information. Each image is transformed with 180 degrees rotation and as well flipped, as part of data augmentation.
@@ -42,10 +26,10 @@ def transformImageAndSave(image, f, customStr, path):
     cA, cH, cV, cD  = fwdHaarDWT2D(image)
 
     fileName = (os.path.splitext(f)[0])
-    fLL = f.replace(fileName, f'{fileName}_{customStr}LL').replace('.jpg', '.tiff')
-    fLH = f.replace(fileName, f'{fileName}_{customStr}LH').replace('.jpg', '.tiff')
-    fHL = f.replace(fileName, f'{fileName}_{customStr}HL').replace('.jpg', '.tiff')
-    fHH = f.replace(fileName, f'{fileName}_{customStr}HH').replace('.jpg', '.tiff')
+    fLL = f.replace(fileName, f'{fileName}_{customStr}LL').replace(os.path.splitext(f)[-1], '.tiff')
+    fLH = f.replace(fileName, f'{fileName}_{customStr}LH').replace(os.path.splitext(f)[-1], '.tiff')
+    fHL = f.replace(fileName, f'{fileName}_{customStr}HL').replace(os.path.splitext(f)[-1], '.tiff')
+    fHH = f.replace(fileName, f'{fileName}_{customStr}HH').replace(os.path.splitext(f)[-1], '.tiff')
     cA = Image.fromarray(cA)
     cH = Image.fromarray(cH)
     cV = Image.fromarray(cV)
@@ -81,11 +65,11 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
     return True
     
     
-def createTrainingData(positiveImagePath, negativeImagePath):
+def createTrainingData(orignePositiveImagePath, origenNegativeImagePath, outputPositiveImagePath, outputNegativeImagePath):
     
     # get image files by classes
-    positiveImageFiles = [f for f in listdir(positiveImagePath) if (isfile(join(positiveImagePath, f)))]
-    negativeImageFiles = [f for f in listdir(negativeImagePath) if (isfile(join(negativeImagePath, f)))]
+    positiveImageFiles = [f for f in listdir(orignePositiveImagePath) if (isfile(join(orignePositiveImagePath, f)))]
+    negativeImageFiles = [f for f in listdir(origenNegativeImagePath) if (isfile(join(origenNegativeImagePath, f)))]
 
     positiveCount = len(positiveImageFiles)
     negativeCount = len(negativeImageFiles)
@@ -94,17 +78,17 @@ def createTrainingData(positiveImagePath, negativeImagePath):
     print(f'negative samples: {negativeCount}')
 
     # create folders (not tracked by git)
-    if not os.path.exists(positiveTrainImagePath):
-        os.makedirs(positiveTrainImagePath)
-    if not os.path.exists(negativeTrainImagePath):
-        os.makedirs(negativeTrainImagePath)
+    if not os.path.exists(outputPositiveImagePath):
+        os.makedirs(outputNegativeImagePath)
+    if not os.path.exists(outputNegativeImagePath):
+        os.makedirs(outputNegativeImagePath)
 
     Knegative = 0
     Kpositive = 0
 
     # create positive training images
     for f in positiveImageFiles:
-        ret = augmentAndTransformImage(f, positiveImagePath, positiveTrainImagePath)
+        ret = augmentAndTransformImage(f, orignePositiveImagePath, outputPositiveImagePath)
         if ret is None:
             continue
         Kpositive += 3
@@ -112,7 +96,7 @@ def createTrainingData(positiveImagePath, negativeImagePath):
 
     # create negative training images
     for f in negativeImageFiles:
-        ret = augmentAndTransformImage(f, negativeImagePath, negativeTrainImagePath)
+        ret = augmentAndTransformImage(f, origenNegativeImagePath, outputNegativeImagePath)
         if ret is None:
             continue
         Knegative += 3
@@ -125,9 +109,11 @@ def createTrainingData(positiveImagePath, negativeImagePath):
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('--positiveImages', type=str, help='Directory with positive (Moiré pattern) images.')
-    parser.add_argument('--negativeImages', type=str, help='Directory with negative (Normal) images.')
-    parser.add_argument('--train', type=int, help='0 = train, 1 = test')
+    parser.add_argument('--origenPositiveImages', type=str, help='Directory with positive (Moiré pattern) images.')
+    parser.add_argument('--origenNegativeImages', type=str, help='Directory with negative (Normal) images.')
+
+    parser.add_argument('--outputPositiveImages', type=str, help='Directory with transformed positive Images.')
+    parser.add_argument('--outputNegativeImages', type=str, help='Directory with transformed negative Images.')
     
     return parser.parse_args(argv)
 
