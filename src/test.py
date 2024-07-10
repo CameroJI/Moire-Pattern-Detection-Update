@@ -33,7 +33,6 @@ def main(args):
     CNN_model.load_weights(weights_file)
     
     evaluateFolder(CNN_model, datasetList, positiveImagePath, negativeImagePath, batch_size, numClasses, height, width)
-    #evaluate(CNN_model,X_LL,X_LH,X_HL,X_HH, Y)
     
 def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, height, width):
     n = len(listInput)
@@ -48,7 +47,7 @@ def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, h
         print(f'start: {start}\tend: {end}\tn:{len(listInput)}')
         
         X_LL_test, X_LH_test, X_HL_test, X_HH_test, Y_test = getEvaluationBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
-        #Y_test = to_categorical(Y_test, numClasses)
+
         batchTemp = end - start
         data = [X_LL_test, X_LH_test, X_HL_test, X_HH_test]
         labels = to_categorical(Y_test, numClasses)
