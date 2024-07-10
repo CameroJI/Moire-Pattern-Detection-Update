@@ -225,10 +225,7 @@ def evaluate(model, listInput, posPath, negPath, height, width):
     FN = 0
     for i in range(len(Y_test)):
         if np.argmax(model_out[i, :]) == Y_test[i]:
-            str_label='Pass'
             passCnt = passCnt + 1
-        else:
-            str_label='Fail'
 
         if Y_test[i] ==0:
             if np.argmax(model_out[i, :]) == Y_test[i]:
