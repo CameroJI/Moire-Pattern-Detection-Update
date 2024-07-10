@@ -6,16 +6,12 @@ import sys
 import argparse
 from math import ceil
 from os import listdir
-from os.path import isfile, join, splitext
+from os.path import join
 from PIL import Image
-from sklearn import preprocessing
 import io
-from sklearn.model_selection import train_test_split
 from mCNN import createModel
-import createTrainingData
-from matplotlib.pyplot import imshow
 from haar2D import fwdHaarDWT2D
-from train import evaluate, createElements, defineEpochRange, scaleData
+from train import createElements, defineEpochRange, scaleData
 import random
 from keras.utils import to_categorical # type: ignore
 import tensorflow as tf

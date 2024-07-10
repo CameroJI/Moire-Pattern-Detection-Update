@@ -7,12 +7,10 @@ import argparse
 from math import ceil
 import os
 from os import listdir, makedirs
-from os.path import isfile, join, exists
+from os.path import join, exists
 from PIL import Image
 from sklearn import preprocessing
-from skimage import io
 import random
-from sklearn.model_selection import train_test_split
 from mCNN import createModel
 from tensorflow import keras
 from keras.utils import to_categorical # type: ignore
