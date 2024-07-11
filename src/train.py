@@ -6,6 +6,7 @@ import sys
 import argparse
 from math import ceil
 import os
+import time
 from os import listdir, makedirs
 from os.path import join, exists
 from PIL import Image
@@ -20,6 +21,7 @@ def main(args):
     positiveImagePath = (args.positiveImages)
     negativeImagePath = (args.negativeImages)
     numEpochs = (args.epochs)
+    save_epoch = (args.save_epoch)
     positiveDataImagePath = args.trainingDataPositive
     negativeDataImagePath = args.trainingDataNegative
     batch_size = (args.batch_size)
@@ -46,7 +48,7 @@ def main(args):
     epoch = epochFileValidation(epochFilePath, loadCheckPoint)
     
     model = trainModel(trainIndex, positiveDataImagePath, negativeDataImagePath, epoch, numEpochs, 
-        epochFilePath, batch_size, numClasses, height, width, checkpoint_path, model)
+        epochFilePath, save_epoch, batch_size, numClasses, height, width, checkpoint_path, model)
 
     evaluate(model, valIndex, positiveDataImagePath, negativeDataImagePath, height, width)
 
@@ -143,13 +145,13 @@ def saveEpochFile(epochFilePath, epoch):
         epochFile.write(str(epoch + 1))
         print(f"\nEpoch Save: {epoch + 1}")
         
-def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, batch_size, numClasses, height, width, checkpoint_path, model):
+def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_epoch, batch_size, numClasses, height, width, checkpoint_path, model):
     epoch -= 1
     n = len(listInput)
-    save_epoch = 10
 
     for i in range(epochs - epoch):
         print(f"epoch: {i + 1}/{epochs}\n")
+        start_time = time.time()
         for j in range(ceil(n/batch_size)):
             start, end = defineEpochRange(j, batch_size, n)
             print(f"Training {end - start} images.", end='\t')
@@ -159,6 +161,12 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, batch_
             Y_train = to_categorical(Y_train, numClasses)
 
             model.train_on_batch([X_LL_train, X_LH_train, X_HL_train, X_HH_train], Y_train)
+            
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        minutes = elapsed_time // 60
+        remaining_seconds = elapsed_time % 60
+        print(f"Batch time: {minutes:.2f} minutes {remaining_seconds:.2f} seconds")
         
         if i % save_epoch == 0:
             saveModel(model, checkpoint_path)
@@ -276,6 +284,8 @@ def parse_arguments(argv):
     parser.add_argument('--checkpointPath', type=str, help='Directory for model Checkpoint', default='./checkpoint/')
     
     parser.add_argument('--epochs', type=int, help='Number of epochs for training', default=10)
+    parser.add_argument('--save_epoch', type=int, help='Number of epochs to save the model', default=10)
+
     parser.add_argument('--batch_size', type=int, help='Batch size for epoch in training', default=32)
     parser.add_argument('--height', type=int, help='Image height resize', default=375)
     parser.add_argument('--width', type=int, help='Image width resize', default=500)
