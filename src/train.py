@@ -64,6 +64,12 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
         imgLH = Image.open(join(trainImagePath, fLH))
         imgHL = Image.open(join(trainImagePath, fHL))
         imgHH = Image.open(join(trainImagePath, fHH))
+        
+        imgLL = imgLL.resize((width, height))
+        imgLH = imgLH.resize((width, height))
+        imgHL = imgHL.resize((width, height))
+        imgHH = imgHH.resize((width, height))
+        
     except Exception as e:
         print(f"Error: Couldn\'t read the file {fileName}. Make sure only images are present in the folder")
         print('Exception:', e)
