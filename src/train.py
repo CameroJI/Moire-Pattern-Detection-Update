@@ -1,5 +1,3 @@
-#To detect Moire ́ patterns, images are first decomposed using Wavelet decomposition (refer to file '') and trained using multi-input Convolutional neural network. The strength of the proposed CNN model is, it uses the LL intensity image (from the Wavelet decomposition) as a weight parameter for the Moire ́ pattern, thereby approximating the spatial spread of the Moire ́ pattern in the image. Usage of CNN model performs better than frequency thresholding approach as the model is trained considering diverse scenarios and it is able to distinguish between the high frequency of background texture and the Moire ́ pattern.
-
 from matplotlib import pyplot as plt
 import numpy as np
 import sys
@@ -153,9 +151,8 @@ def saveEpochFile(epochFilePath, epoch):
         
 @tensorflow.function
 def train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train):
+    logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=True)  # Logits for this minibatch
     with tensorflow.GradientTape() as tape:
-        
-        
         logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=True)  # Logits for this minibatch
         loss_value = loss_fn(Y_train, logits)
 
@@ -173,15 +170,28 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
         print(f"epoch: {i + 1}/{epochs}\n")
         start_time = time.time()
         for j in range(ceil(n/batch_size)):
-            start, end = defineEpochRange(j, batch_size, n)
-            print(f"Training {end - start} images.", end='\t')
-            print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\t', end='Loss: ')
-            
+            start, end = defineEpochRange(j, batch_size, n)            
             X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train = getBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
-            Y_train = to_categorical(Y_train, numClasses)
+            #Y_train = to_categorical(Y_train, numClasses)
 
             loss = train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train)
-            print(loss)
+            print(print("------------------------------------"))
+            print(f"Training {end - start} images.", end='\t')
+            print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\t', end='Loss: ')
+            print(float(loss))
+            train_acc = train_acc_metric.result()
+            print("\nTraining acc over epoch: %.4f" % (float(train_acc),))
+
+            # Reset training metrics at the end of each epoch
+            train_acc_metric.reset_states()
+
+            # Run a validation loop at the end of each epoch.
+            val_logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=False)
+                # Update val metrics
+            val_acc_metric.update_state(Y_train, val_logits)
+            val_acc = val_acc_metric.result()
+            print("Validation acc: %.4f" % (float(val_acc),))
+            val_acc_metric.reset_states()
             
         end_time = time.time()
         elapsed_time = end_time - start_time
@@ -192,20 +202,6 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
         if i % save_epoch == 0:
             saveModel(model, checkpoint_path)
         saveEpochFile(epochFilePath, i)
-        
-        train_acc = train_acc_metric.result()
-        print("Training acc over epoch: %.4f" % (float(train_acc),))
-
-        # Reset training metrics at the end of each epoch
-        train_acc_metric.reset_states()
-
-        # Run a validation loop at the end of each epoch.
-        val_logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=False)
-            # Update val metrics
-        val_acc_metric.update_state(Y_train, val_logits)
-        val_acc = val_acc_metric.result()
-        print("Validation acc: %.4f" % (float(val_acc),))
-        val_acc_metric.reset_states()
         
         print("------------------------------------")
     saveModel(model, checkpoint_path)
