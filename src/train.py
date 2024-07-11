@@ -175,7 +175,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
             #Y_train = to_categorical(Y_train, numClasses)
 
             loss = train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train)
-            print(print("------------------------------------"))
+            print("------------------------------------")
             print(f"Training {end - start} images.", end='\t')
             print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\t', end='Loss: ')
             print(float(loss))
