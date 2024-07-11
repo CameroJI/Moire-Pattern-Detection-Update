@@ -79,7 +79,7 @@ def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputP
 
     # create folders (not tracked by git)
     if not os.path.exists(outputPositiveImagePath):
-        os.makedirs(outputNegativeImagePath)
+        os.makedirs(outputPositiveImagePath)
     if not os.path.exists(outputNegativeImagePath):
         os.makedirs(outputNegativeImagePath)
 
