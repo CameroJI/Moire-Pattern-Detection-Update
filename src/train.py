@@ -176,9 +176,9 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
             print("------------------------------------")
             print(f"Training {end - start} images.", end='\t')
             print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\t', end='Loss: ')
-            print(float(loss))
+            print(f'{float(loss)*100:.2f}%')
             train_acc = train_acc_metric.result()
-            print("\nTraining acc over batch: %.4f" % (float(train_acc),))
+            print("\nTraining acc over batch: %.2f%" % (float(train_acc)*100))
 
             # Reset training metrics at the end of each epoch
             train_acc_metric.reset_state()
@@ -188,7 +188,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
                 # Update val metrics
             val_acc_metric.update_state(Y_train, val_logits)
             val_acc = val_acc_metric.result()
-            print("Validation acc: %.4f" % (float(val_acc),))
+            print("Validation acc: %.2f%" % (float(val_acc)*100))
             val_acc_metric.reset_state()
 
         end_time = time.time()
