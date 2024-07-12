@@ -135,7 +135,7 @@ def epochFileValidation(path, loadFlag, init_epoch):
                 epochFile.write("1")
             else:
                 epoch = init_epoch
-                epochFile.write(int(epoch))
+                epochFile.write(str(epoch))
     elif init_epoch == 0:
         with open(path, 'r') as epochFile:
             epoch = int(epochFile.read())
