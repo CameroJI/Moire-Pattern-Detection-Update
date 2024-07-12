@@ -180,7 +180,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
             print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\t', end='Loss: ')
             print(float(loss))
             train_acc = train_acc_metric.result()
-            print("\nTraining acc over epoch: %.4f" % (float(train_acc),))
+            print("\nTraining acc over batch: %.4f" % (float(train_acc),))
 
             # Reset training metrics at the end of each epoch
             train_acc_metric.reset_states()
