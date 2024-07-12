@@ -191,7 +191,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
             val_acc_metric.update_state(Y_train, val_logits)
             val_acc = val_acc_metric.result()
             print("Validation acc: %.4f" % (float(val_acc),))
-            val_acc_metric.reset_states()
+            val_acc_metric.reset_state()
             
         end_time = time.time()
         elapsed_time = end_time - start_time
