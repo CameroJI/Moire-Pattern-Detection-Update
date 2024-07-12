@@ -23,13 +23,19 @@ val_acc_metric = keras.metrics.CategoricalAccuracy()
 def main(args):
     positiveImagePath = (args.positiveImages)
     negativeImagePath = (args.negativeImages)
-    numEpochs = (args.epochs)
-    save_epoch = (args.save_epoch)
+    
     positiveDataImagePath = args.trainingDataPositive
     negativeDataImagePath = args.trainingDataNegative
+    
+    numEpochs = (args.epochs)
+    save_epoch = (args.save_epoch)
+    init_epoch = (args.init_epoch)
+    
     batch_size = (args.batch_size)
+    
     checkpointPath = (args.checkpointPath)
     loadCheckPoint = (args.loadCheckPoint)
+    
     height = (args.height)
     width = (args.width)
     
@@ -37,6 +43,7 @@ def main(args):
 
     epochFilePath = f"{checkpointPath}/epoch.txt"
     checkpoint_path = f"{checkpointPath}/cp.h5"
+    
     if not exists(checkpointPath):
         makedirs(checkpointPath)
         
@@ -48,7 +55,7 @@ def main(args):
     if loadCheckPoint:
         model.load_weights(checkpoint_path)
     
-    epoch = epochFileValidation(epochFilePath, loadCheckPoint)
+    epoch = epochFileValidation(epochFilePath, loadCheckPoint, init_epoch)
     
     model = trainModel(trainIndex, positiveDataImagePath, negativeDataImagePath, epoch, numEpochs, 
         epochFilePath, save_epoch, batch_size, numClasses, height, width, checkpoint_path, model)
@@ -120,15 +127,21 @@ def createIndex(posPath, negPath):
     
     return datasetList, classes
 
-def epochFileValidation(path, loadFlag):
+def epochFileValidation(path, loadFlag, init_epoch):
     if not exists(path) or not loadFlag:
         with open(path, 'w') as epochFile:
-            epochFile.write("1")
-            epoch = 1
-    else:
+            if init_epoch == 0:
+                epoch = 1
+                epochFile.write("1")
+            else:
+                epoch = init_epoch
+                epochFile.write(int(epoch))
+    elif init_epoch == 0:
         with open(path, 'r') as epochFile:
             epoch = int(epochFile.read())
-            
+    else:
+        epoch = init_epoch
+
     return epoch
 
 def saveEpochFile(epochFilePath, epoch):
@@ -274,7 +287,7 @@ def parse_arguments(argv):
     
     parser.add_argument('--epochs', type=int, help='Number of epochs for training', default=10)
     parser.add_argument('--save_epoch', type=int, help='Number of epochs to save the model', default=10)
-    parser.add_argument('--init_epoch', type=int, help='Initial epoch for model training', default=10)
+    parser.add_argument('--init_epoch', type=int, help='Initial epoch for model training (if 0, starts with the saved epoch file)', default=0)
 
     parser.add_argument('--batch_size', type=int, help='Batch size for epoch in training', default=32)
     parser.add_argument('--height', type=int, help='Image height resize', default=375)
