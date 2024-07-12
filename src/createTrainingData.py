@@ -95,16 +95,8 @@ def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputP
             continue
         Kpositive += 3
         n += 1
-        
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    minutes = elapsed_time // 60
-    remaining_seconds = elapsed_time % 60
-    print(f"\nPositive Images Trained Completed in {minutes:.2f} minutes {remaining_seconds:.2f} seconds")
-    print("------------------------------------\n")
 
     # create negative training images
-    start_time = time.time()
     n = 0
     for f in negativeImageFiles:
         ret = augmentAndTransformImage(f, origenNegativeImagePath, outputNegativeImagePath)
@@ -113,18 +105,16 @@ def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputP
             continue
         Knegative += 3
         n += 1
-        
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    minutes = elapsed_time // 60
-    remaining_seconds = elapsed_time % 60
-    print(f"\nNegative Images Trained Completed in {minutes:.2f} minutes {remaining_seconds:.2f} seconds")
-    print("------------------------------------\n")
 
     print('Total positive files after augmentation: ', Kpositive)
     print('Total negative files after augmentation: ', Knegative)
     
-        
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    hours = elapsed_time // 3600
+    elapsed_time %= 3600
+    minutes, seconds = divmod(elapsed_time, 60)
+    print(f"\nImages Transformed in {int(hours)} hours, {int(minutes)} minutes, {seconds:.2f} seconds.")
 
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()

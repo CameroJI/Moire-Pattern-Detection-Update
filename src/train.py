@@ -195,7 +195,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
         elapsed_time = end_time - start_time
         minutes = elapsed_time // 60
         remaining_seconds = elapsed_time % 60
-        print(f"Batch time: {minutes:.2f} minutes {remaining_seconds:.2f} seconds")
+        print(f"Batch time: {int(minutes)} minutes {remaining_seconds:.2f} seconds")
 
         if i % save_epoch == 0:
             saveModel(model, checkpoint_path)
