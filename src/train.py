@@ -33,7 +33,7 @@ def main(args):
     height = (args.height)
     width = (args.width)
     
-    trainIndex, valIndex, numClasses = createIndex(positiveImagePath, negativeImagePath)
+    trainIndex, numClasses = createIndex(positiveImagePath, negativeImagePath)
 
     epochFilePath = f"{checkpointPath}/epoch.txt"
     checkpoint_path = f"{checkpointPath}/cp.h5"
@@ -52,9 +52,6 @@ def main(args):
     
     model = trainModel(trainIndex, positiveDataImagePath, negativeDataImagePath, epoch, numEpochs, 
         epochFilePath, save_epoch, batch_size, numClasses, height, width, checkpoint_path, model)
-
-    evaluate(model, valIndex, positiveDataImagePath, negativeDataImagePath, height, width)
-
 
 def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_index, Y, sampleIndex, sampleVal, height, width):
     f = str(f)
@@ -117,20 +114,11 @@ def createIndex(posPath, negPath):
     datasetList = [(i, 1) for i in posList]
     datasetList.extend((i, 0) for i in negList)
 
-    #dataset split for training and evaluation
-    trainList = []
-    valList = []
-
     random.shuffle(datasetList)
-    for i in range(len(datasetList)):
-        if i < len(datasetList) - int(len(datasetList)*0.1):
-            trainList.append(datasetList[i])
-        else:
-            valList.append(datasetList[i])
     
     classes = len(np.unique(np.array([fila[1] for fila in datasetList])))
     
-    return trainList, valList, classes
+    return datasetList, classes
 
 def epochFileValidation(path, loadFlag):
     if not exists(path) or not loadFlag:
@@ -265,41 +253,6 @@ def getBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
     
     return X_LL, X_LH, X_HL, X_HH, Y
 
-def evaluate(model, listInput, posPath, negPath, height, width):
-    X_LL_test, X_LH_test, X_HL_test, X_HH_test, Y_test = getBatch(listInput, posPath, negPath, 0, len(listInput) - 1, len(listInput) - 1, height, width)
-    model_out = model.predict([X_LL_test,X_LH_test,X_HL_test,X_HH_test])
-    passCnt = 0
-    TP = 0
-    TN = 0
-    FP = 0
-    FN = 0
-    for i in range(len(Y_test)):
-        if np.argmax(model_out[i, :]) == Y_test[i]:
-            passCnt = passCnt + 1
-
-        if Y_test[i] ==0:
-            if np.argmax(model_out[i, :]) == Y_test[i]:
-                TP = TP + 1
-            else:
-                FN = FN + 1
-        else:
-            if np.argmax(model_out[i, :]) == Y_test[i]:
-                TN = TN + 1
-            else:
-                FP = FP + 1
-
-    start = "\033[1m"
-    end = "\033[0;0m"
-    print(f'{start}confusion matrix (test / validation){end}')
-    print(f'{start}true positive:  {end}{str(TP)}')
-    print(f'{start}false positive: {end}{str(FP)}')
-    print(f'{start}true negative:  {end}{str(TN)}')
-    print(f'{start}false negative: {end}{str(FN)}')
-    print('\n')
-    print(f'{start}accuracy:  {end}' + "{:.4f} %".format(100 * (TP + TN) / (TP + FP + FN + TN)))
-    print(f'{start}precision: {end}' + "{:.4f} %".format(100*TP/(TP + FP)))
-    print(f'{start}recall:  {end}' + "{:.4f} %".format(100*TP/(TP + FN)))
-
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1', 'True'):
         return True
@@ -321,6 +274,7 @@ def parse_arguments(argv):
     
     parser.add_argument('--epochs', type=int, help='Number of epochs for training', default=10)
     parser.add_argument('--save_epoch', type=int, help='Number of epochs to save the model', default=10)
+    parser.add_argument('--init_epoch', type=int, help='Initial epoch for model training', default=10)
 
     parser.add_argument('--batch_size', type=int, help='Batch size for epoch in training', default=32)
     parser.add_argument('--height', type=int, help='Image height resize', default=375)
