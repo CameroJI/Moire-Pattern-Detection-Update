@@ -17,8 +17,8 @@ from keras.callbacks import ModelCheckpoint # type: ignore
 
 optimizer = keras.optimizers.Adam(learning_rate=1e-3)
 loss_fn = keras.losses.CategoricalCrossentropy(from_logits=False)
-train_acc_metric = keras.metrics.CategoricalCrossentropy()
-val_acc_metric = keras.metrics.CategoricalCrossentropy()
+train_acc_metric = keras.metrics.CategoricalAccuracy()
+val_acc_metric = keras.metrics.CategoricalAccuracy()
 
 def main(args):
     positiveImagePath = (args.positiveImages)
@@ -178,7 +178,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
             print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\t', end='Loss: ')
             print(float(loss))
             train_acc = train_acc_metric.result()
-            print("\nTraining loss over batch: %.4f" % (float(train_acc),))
+            print("\nTraining acc over batch: %.4f" % (float(train_acc),))
 
             # Reset training metrics at the end of each epoch
             train_acc_metric.reset_state()
