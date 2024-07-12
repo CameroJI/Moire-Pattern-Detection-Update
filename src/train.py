@@ -166,7 +166,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
     n = len(listInput)
     start_time_full = time.time()
     for i in range(epochs - epoch):
-        print(f"epoch: {i + 1}/{epochs}\n")
+        print(f"epoch: {i + epoch + 1}/{epochs}\n")
         start_time = time.time()
         for j in range(ceil(n/batch_size)):
             start, end = defineEpochRange(j, batch_size, n)            
