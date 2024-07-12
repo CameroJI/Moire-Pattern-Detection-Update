@@ -1,4 +1,3 @@
-from matplotlib import pyplot as plt
 import numpy as np
 import sys
 import argparse
@@ -16,10 +15,10 @@ from tensorflow import keras
 from keras.utils import to_categorical # type: ignore
 from keras.callbacks import ModelCheckpoint # type: ignore
 
-optimizer = keras.optimizers.SGD(learning_rate=1e-3)
-loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-train_acc_metric = keras.metrics.SparseCategoricalAccuracy()
-val_acc_metric = keras.metrics.SparseCategoricalAccuracy()
+optimizer = keras.optimizers.Adam(learning_rate=1e-3)
+loss_fn = keras.losses.CategoricalCrossentropy(from_logits=False)
+train_acc_metric = keras.metrics.CategoricalCrossentropy()
+val_acc_metric = keras.metrics.CategoricalCrossentropy()
 
 def main(args):
     positiveImagePath = (args.positiveImages)
@@ -151,7 +150,6 @@ def saveEpochFile(epochFilePath, epoch):
         
 @tensorflow.function
 def train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train):
-    logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=True)  # Logits for this minibatch
     with tensorflow.GradientTape() as tape:
         logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=True)  # Logits for this minibatch
         loss_value = loss_fn(Y_train, logits)
@@ -165,14 +163,14 @@ def train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train):
 def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_epoch, batch_size, numClasses, height, width, checkpoint_path, model):
     epoch -= 1
     n = len(listInput)
-
+    start_time_full = time.time()
     for i in range(epochs - epoch):
         print(f"epoch: {i + 1}/{epochs}\n")
         start_time = time.time()
         for j in range(ceil(n/batch_size)):
             start, end = defineEpochRange(j, batch_size, n)            
             X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train = getBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
-            #Y_train = to_categorical(Y_train, numClasses)
+            Y_train = to_categorical(Y_train, numClasses)
 
             loss = train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train)
             print("------------------------------------")
@@ -183,7 +181,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
             print("\nTraining acc over batch: %.4f" % (float(train_acc),))
 
             # Reset training metrics at the end of each epoch
-            train_acc_metric.reset_states()
+            train_acc_metric.reset_state()
 
             # Run a validation loop at the end of each epoch.
             val_logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=False)
@@ -192,19 +190,26 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
             val_acc = val_acc_metric.result()
             print("Validation acc: %.4f" % (float(val_acc),))
             val_acc_metric.reset_state()
-            
+
         end_time = time.time()
         elapsed_time = end_time - start_time
         minutes = elapsed_time // 60
         remaining_seconds = elapsed_time % 60
         print(f"Batch time: {minutes:.2f} minutes {remaining_seconds:.2f} seconds")
-        
+
         if i % save_epoch == 0:
             saveModel(model, checkpoint_path)
         saveEpochFile(epochFilePath, i)
-        
+
         print("------------------------------------")
     saveModel(model, checkpoint_path)
+
+    end_time_full = time.time()
+    elapsed_time = end_time_full - start_time_full
+    hours = elapsed_time // 3600
+    elapsed_time %= 3600
+    minutes, seconds = divmod(elapsed_time, 60)
+    print(f"\nTotal training time: {int(hours)} hours, {int(minutes)} minutes, {seconds:.2f} seconds.")
 
     return model
         
