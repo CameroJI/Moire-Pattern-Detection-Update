@@ -53,7 +53,6 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
     wdChk, htChk = imgGray.size
     if htChk > wdChk:
         imgGray = imgGray.rotate(-90, expand=1)
-        print('training image rotated')
     transformImageAndSave(imgGray, f, '', trainFolder)
 
     imgGray = imgGray.transpose(Image.ROTATE_180)
@@ -87,16 +86,18 @@ def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputP
     Kpositive = 0
 
     # create positive training images
-    for f in positiveImageFiles:
+    for n, f in positiveImageFiles:
         ret = augmentAndTransformImage(f, origenPositiveImagePath, outputPositiveImagePath)
+        print(f"Transformed Positive Image {n + 1}/{len(positiveCount)}")
         if ret is None:
             continue
         Kpositive += 3
 
 
     # create negative training images
-    for f in negativeImageFiles:
+    for n, f in negativeImageFiles:
         ret = augmentAndTransformImage(f, origenNegativeImagePath, outputNegativeImagePath)
+        print(f"Transformed Negative Image {n + 1}/{len(negativeCount)}")
         if ret is None:
             continue
         Knegative += 3
