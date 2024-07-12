@@ -86,21 +86,25 @@ def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputP
     Kpositive = 0
 
     # create positive training images
-    for n, f in positiveImageFiles:
+    n = 0
+    for f in positiveImageFiles:
         ret = augmentAndTransformImage(f, origenPositiveImagePath, outputPositiveImagePath)
-        print(f"Transformed Positive Image {n + 1}/{len(positiveCount)}")
+        print(f"Transformed Positive Image {n + 1}/{positiveCount}")
         if ret is None:
             continue
         Kpositive += 3
+        n += 1
 
 
     # create negative training images
-    for n, f in negativeImageFiles:
+    n = 0
+    for f in negativeImageFiles:
         ret = augmentAndTransformImage(f, origenNegativeImagePath, outputNegativeImagePath)
-        print(f"Transformed Negative Image {n + 1}/{len(negativeCount)}")
+        print(f"Transformed Negative Image {n + 1}/{negativeCount}")
         if ret is None:
             continue
         Knegative += 3
+        n += 1
 
     print('Total positive files after augmentation: ', Kpositive)
     print('Total negative files after augmentation: ', Knegative)
