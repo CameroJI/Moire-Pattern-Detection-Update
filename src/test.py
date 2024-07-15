@@ -103,7 +103,7 @@ def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, h
     hours = elapsed_time // 3600
     elapsed_time %= 3600
     minutes, seconds = divmod(elapsed_time, 60)
-    print(f"\nTotal testing time: {int(hours)} hours, {int(minutes)} minutes, {seconds:.2f} seconds.")     
+    print(f"\nTotal testing time: {int(hours)} hours, {int(minutes)} minutes, {seconds:.2f} seconds.\n\n")     
 
 def createIndex(posPath, negPath):
     posList = list(listdir(posPath))
