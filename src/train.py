@@ -175,7 +175,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
 
             loss = train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train)
             print("------------------------------------")
-            print(f"Training {end - start} images.", end='\t')
+            print(f"Training {end - start} images ({j + 1}/{ceil(n/batch_size)})", end='\t')
             print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss: {float(loss)*100:.2f}%')
             train_acc = train_acc_metric.result()
             print(f'\nTraining acc over batch: {float(train_acc)*100:.2f}%')

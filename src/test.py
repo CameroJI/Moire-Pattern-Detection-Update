@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import sys
 import argparse
+import time
 from math import ceil
 from os import listdir
 from os.path import join
@@ -45,6 +46,8 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels):
     test_loss(t_loss)
     test_accuracy(labels, predictions)
     
+    return test_loss.result(), test_accuracy.result()
+    
 def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, height, width):
     n = len(listInput)
     total_loss = 0
@@ -52,7 +55,13 @@ def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, h
     steps = ceil(n/batch_size)
     print()
     
+    test_loss.reset_state()
+    test_accuracy.reset_state()
+    
+    start_time_full = time.time()
     for i in range(steps):
+        start_time = time.time()
+        
         start, end = defineEpochRange(i, batch_size, n)
         
         X_LL_test, X_LH_test, X_HL_test, X_HH_test, Y_test = getEvaluationBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
@@ -63,11 +72,21 @@ def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, h
         data = np.array(data)
         labels = np.array(labels)
         
-        test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels)
+        loss, accuracy = test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels)
         if i==0:    print()
-        print(f"Testing {end - start} images.({i + 1}/{steps})", end='\t')
-        print(f'start: {start}\tend: {end}\tn:{len(listInput)}')
-        print(f'Test Loss: {test_loss.result().numpy()*100:.2f}%\t Test Accuracy: {test_accuracy.result().numpy()*100:.2f}%\n')
+        print(f"Testing {end - start} images ({i + 1}/{steps})", end='\t')
+        print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}')
+        print(f'Test Loss: {loss*100:.2f}%\t Test Accuracy: {accuracy*100:.2f}%\n')
+        
+        total_loss += loss
+        total_accuracy += accuracy
+        
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        minutes = elapsed_time // 60
+        remaining_seconds = elapsed_time % 60
+        print(f"Batch time: {int(minutes)} minutes {remaining_seconds:.2f} seconds")
+        print("------------------------------------")
 
     # Iterar sobre el dataset y calcular la precisión y la pérdida
     print(f'\nTotal Loss: {total_loss}')
@@ -76,8 +95,15 @@ def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, h
     mean_loss = total_loss / steps
     mean_accuracy = total_accuracy / steps   
 
-    print(f'\nMean Loss: {mean_loss*100}%')
-    print(f'Mean Accuracy: {mean_accuracy*100}%')      
+    print(f'\nMean Loss: {mean_loss*100:2f}%')
+    print(f'Mean Accuracy: {mean_accuracy*100:2f}%')
+    
+    end_time_full = time.time()
+    elapsed_time = end_time_full - start_time_full
+    hours = elapsed_time // 3600
+    elapsed_time %= 3600
+    minutes, seconds = divmod(elapsed_time, 60)
+    print(f"\nTotal testing time: {int(hours)} hours, {int(minutes)} minutes, {seconds:.2f} seconds.")     
 
 def createIndex(posPath, negPath):
     posList = list(listdir(posPath))
