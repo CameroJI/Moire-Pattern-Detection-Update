@@ -16,6 +16,9 @@ import random
 from keras.utils import to_categorical # type: ignore
 import tensorflow as tf
     
+test_loss = tf.keras.metrics.Mean(name='test_loss')
+test_accuracy = tf.keras.metrics.BinaryAccuracy(name='test_accuracy')
+
 def main(args):
     weights_file = (args.weightsFile)
     positiveImagePath = (args.positiveTestImages)
@@ -34,6 +37,14 @@ def main(args):
     
     evaluateFolder(CNN_model, datasetList, positiveImagePath, negativeImagePath, batch_size, numClasses, height, width)
     
+@tf.function
+def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels):
+    predictions = model([X_LL_test, X_LH_test, X_HL_test, X_HH_test], training=False)
+    t_loss = tf.keras.losses.binary_crossentropy(labels, predictions)
+    
+    test_loss(t_loss)
+    test_accuracy(labels, predictions)
+    
 def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, height, width):
     n = len(listInput)
     total_loss = 0
@@ -43,56 +54,20 @@ def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, h
     
     for i in range(steps):
         start, end = defineEpochRange(i, batch_size, n)
-        print(f"Testing {end - start} images.", end='\t')
-        print(f'start: {start}\tend: {end}\tn:{len(listInput)}')
         
         X_LL_test, X_LH_test, X_HL_test, X_HH_test, Y_test = getEvaluationBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
 
-        batchTemp = end - start
         data = [X_LL_test, X_LH_test, X_HL_test, X_HH_test]
         labels = to_categorical(Y_test, numClasses)
         
         data = np.array(data)
         labels = np.array(labels)
         
-        def data_generator():
-            for i in range(batchTemp):
-                # Para cada ejemplo, devolver un diccionario con los nombres de entrada esperados por el modelo
-                yield ({
-                    'input_1': data[0][i],
-                    'input_2': data[1][i],
-                    'input_3': data[2][i],
-                    'input_4': data[3][i]
-                }, labels[i])
-
-        # Especificación de tipo para el dataset
-        dataset = tf.data.Dataset.from_generator(data_generator,
-                                        output_signature=(
-                                            {
-                                                'input_1': tf.TensorSpec(shape=(375, 500, 1), dtype=tf.float32),
-                                                'input_2': tf.TensorSpec(shape=(375, 500, 1), dtype=tf.float32),
-                                                'input_3': tf.TensorSpec(shape=(375, 500, 1), dtype=tf.float32),
-                                                'input_4': tf.TensorSpec(shape=(375, 500, 1), dtype=tf.float32)
-                                            },
-                                            tf.TensorSpec(shape=(2,), dtype=tf.int32)))
-
-        dataset = dataset.shuffle(buffer_size=batchTemp).batch(batchTemp)
-        
-        iterator = iter(dataset)
-        try:
-            while True:
-                batch = next(iterator)
-                x_batch = batch[0]  # Obtener el diccionario de entradas X
-                y_batch = batch[1]
-        
-                loss, accuracy = model.test_on_batch(x_batch, y_batch)
-                print(f'Batch Loss: {loss*100}%')
-                print(f'Batch Accuracy: {accuracy*100}%\n') 
-                total_loss += loss
-                total_accuracy += accuracy
-                # Procesar el lote aquí
-        except StopIteration:
-            continue
+        test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels)
+        if i==0:    print()
+        print(f"Testing {end - start} images.({i + 1}/{steps})", end='\t')
+        print(f'start: {start}\tend: {end}\tn:{len(listInput)}')
+        print(f'Test Loss: {test_loss.result().numpy()*100:.2f}%\t Test Accuracy: {test_accuracy.result().numpy()*100:.2f}%\n')
 
     # Iterar sobre el dataset y calcular la precisión y la pérdida
     print(f'\nTotal Loss: {total_loss}')
