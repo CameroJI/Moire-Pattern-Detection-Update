@@ -9,6 +9,7 @@ from os import listdir
 from os.path import isfile, join
 from PIL import Image
 from haar2D import fwdHaarDWT2D
+from threading import Thread
 
 def main(args):
     origenPositiveImages = (args.origenPositiveImages)
@@ -87,8 +88,7 @@ def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputP
 
     start_time = time.time()
     # create positive training images
-    n = 0
-    for f in positiveImageFiles:
+    for n, f in enumerate(positiveImageFiles):
         ret = augmentAndTransformImage(f, origenPositiveImagePath, outputPositiveImagePath)
         print(f"Transformed Positive Image {n + 1}/{positiveCount}")
         if ret is None:
@@ -97,8 +97,7 @@ def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputP
         n += 1
 
     # create negative training images
-    n = 0
-    for f in negativeImageFiles:
+    for n, f in enumerate(negativeImageFiles):
         ret = augmentAndTransformImage(f, origenNegativeImagePath, outputNegativeImagePath)
         print(f"Transformed Negative Image {n + 1}/{negativeCount}")
         if ret is None:
