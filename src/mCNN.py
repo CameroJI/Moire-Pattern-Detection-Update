@@ -5,8 +5,8 @@
 
 import os
 
-from keras.models import Model # basic class for specifying and training a neural network
-from keras.layers import Input, Convolution2D, MaxPooling2D, Dense, Dropout, Activation, Flatten, Add, Multiply, Maximum
+from keras.models import Model # type: ignore
+from keras.layers import Input, Convolution2D, MaxPooling2D, Dense, Dropout, Activation, Flatten, Add, Multiply, Maximum # type: ignore
 
 def createModel(height, width, depth, num_classes):
 #     num_epochs = 20 # 50 26 200 # we iterate 200 times over the entire training set
