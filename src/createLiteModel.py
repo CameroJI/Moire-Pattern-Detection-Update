@@ -9,14 +9,17 @@ def main(args):
     
     # Cargar el modelo entrenado
     model = keras.models.load_model(modelPath)
-
-    # Convertir a TensorFlow Lite
+    
+    # Convertir el modelo a TensorFlow Lite
     converter = tensorflow.lite.TFLiteConverter.from_keras_model(model)
+    converter.optimizations = [tensorflow.lite.Optimize.DEFAULT]  # Opcional: para optimizaciones
     tflite_model = converter.convert()
 
     # Guardar el modelo convertido
     with open(modelLitePath, 'wb') as f:
         f.write(tflite_model)
+
+    print(f"Modelo convertido y guardado como '{modelLitePath}' con optimización")
         
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()

@@ -1,5 +1,6 @@
 #Use this file for evaluating on a dataset that is not used for training
 
+from pathlib import Path
 from matplotlib import pyplot as plt
 import numpy as np
 import sys
@@ -7,7 +8,7 @@ import argparse
 import time
 from math import ceil
 from os import listdir
-from os.path import join
+from os.path import join, exists
 from PIL import Image
 import io
 from mCNN import createModel
@@ -20,6 +21,20 @@ import tensorflow as tf
 test_loss = tf.keras.metrics.Mean(name='test_loss')
 test_accuracy = tf.keras.metrics.BinaryAccuracy(name='test_accuracy')
 
+def load_model(model_path):
+    model_extension = Path(model_path).suffix.lower()
+
+    if model_extension in ['.h5', '.keras']:
+        return tf.keras.models.load_model(model_path)
+    
+    elif model_extension == '.tflite':
+        interpreter = tf.lite.Interpreter(model_path=model_path)
+        interpreter.allocate_tensors()
+        return interpreter
+    
+    else:
+        raise ValueError(f"Unsupported model file format: {model_extension}")
+    
 def main(args):
     weights_file = (args.weightsFile)
     positiveImagePath = (args.positiveTestImages)
@@ -30,13 +45,12 @@ def main(args):
     
     datasetList, numClasses = createIndex(positiveImagePath, negativeImagePath)
     
-    CNN_model = createModel(height, width, 1, numClasses)
-    CNN_model.compile(loss='categorical_crossentropy', # using the cross-entropy loss function
-        optimizer='adam', # using the Adam optimizer
-        metrics=['accuracy']) # reporting the accuracy 
-    CNN_model.load_weights(weights_file)
-    
-    evaluateFolder(CNN_model, datasetList, positiveImagePath, negativeImagePath, batch_size, numClasses, height, width)
+    if exists(weights_file):
+        print("El archivo existe")
+        CNN_model = load_model(weights_file)
+        evaluateFolder(CNN_model, datasetList, positiveImagePath, negativeImagePath, batch_size, numClasses, height, width)
+    else:
+        print("El archivo del modelo no existe en el directorio establecido.")
     
 @tf.function
 def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels):

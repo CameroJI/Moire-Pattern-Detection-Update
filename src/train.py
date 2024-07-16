@@ -42,7 +42,7 @@ def main(args):
     trainIndex, numClasses = createIndex(positiveImagePath, negativeImagePath)
 
     epochFilePath = f"{checkpointPath}/epoch.txt"
-    checkpoint_path = f"{checkpointPath}/cp.h5"
+    checkpoint_path = f"{checkpointPath}/cp.keras"
     
     if not exists(checkpointPath):
         makedirs(checkpointPath)
