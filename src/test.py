@@ -52,14 +52,49 @@ def main(args):
     else:
         print("El archivo del modelo no existe en el directorio establecido.")
     
-@tf.function
 def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels):
-    predictions = model([X_LL_test, X_LH_test, X_HL_test, X_HH_test], training=False)
+    if isinstance(model, tf.keras.Model):
+        predictions = model([X_LL_test, X_LH_test, X_HL_test, X_HH_test], training=False)
+        
+    elif isinstance(model, tf.lite.Interpreter):
+        # Obtener detalles de las entradas y salidas
+        input_details = model.get_input_details()
+        output_details = model.get_output_details()
+        
+        # Número de muestras
+        N = X_LL_test.shape[0]
+
+        # Almacenar resultados
+        results = []
+
+        for i in range(N):
+            sample_LL = np.array([X_LL_test[i]]).astype(np.float32)
+            sample_LH = np.array([X_LH_test[i]]).astype(np.float32)
+            sample_HL = np.array([X_HL_test[i]]).astype(np.float32)
+            sample_HH = np.array([X_HH_test[i]]).astype(np.float32)
+                        
+            # Configurar las entradas del intérprete TensorFlow Lite
+            model.set_tensor(input_details[0]['index'], sample_LL)
+            model.set_tensor(input_details[1]['index'], sample_LH)
+            model.set_tensor(input_details[2]['index'], sample_HL)
+            model.set_tensor(input_details[3]['index'], sample_HH)
+
+            # Ejecutar el intérprete
+            model.invoke()
+
+            # Obtener los resultados del intérprete
+            output_data = model.get_tensor(output_details[0]['index'])
+            results.append(output_data)
+
+        # Convertir resultados a un array de numpy
+        predictions = np.squeeze(np.array(results), axis=1)
+    else:
+        raise TypeError("Unsupported model type")
+
     t_loss = tf.keras.losses.binary_crossentropy(labels, predictions)
-    
     test_loss(t_loss)
     test_accuracy(labels, predictions)
-    
+
     return test_loss.result(), test_accuracy.result()
     
 def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, height, width):
