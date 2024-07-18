@@ -30,6 +30,7 @@ def main(args):
     numEpochs = (args.epochs)
     save_epoch = (args.save_epoch)
     init_epoch = (args.init_epoch)
+    save_iter = (args.save_iter)
     
     batch_size = (args.batch_size)
     
@@ -39,6 +40,8 @@ def main(args):
     height = (args.height)
     width = (args.width)
     
+    quantization = (args.quantization)
+    
     trainIndex, numClasses = createIndex(positiveImagePath, negativeImagePath)
 
     epochFilePath = f"{checkpointPath}/epoch.txt"
@@ -47,7 +50,8 @@ def main(args):
     if not exists(checkpointPath):
         makedirs(checkpointPath)
         
-    model = createModel(height=height, width=width, depth=1, num_classes=numClasses)
+    model = createModel(height=height, width=width, depth=1, num_classes=numClasses, quantization=quantization)
+    
     model.compile(loss='categorical_crossentropy', # using the cross-entropy loss function
         optimizer='adam', # using the Adam optimizer
         metrics=['accuracy']) # reporting the accuracy 
@@ -58,7 +62,7 @@ def main(args):
     epoch = epochFileValidation(epochFilePath, loadCheckPoint, init_epoch)
     
     model = trainModel(trainIndex, positiveDataImagePath, negativeDataImagePath, epoch, numEpochs, 
-        epochFilePath, save_epoch, batch_size, numClasses, height, width, checkpoint_path, model)
+        epochFilePath, save_epoch, save_iter, batch_size, numClasses, height, width, checkpoint_path, model)
 
 def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_index, Y, sampleIndex, sampleVal, height, width):
     f = str(f)
@@ -161,7 +165,7 @@ def train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train):
     
     return loss_value
         
-def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_epoch, batch_size, numClasses, height, width, checkpoint_path, model):
+def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_epoch, save_iter, batch_size, numClasses, height, width, checkpoint_path, model):
     epoch -= 1
     n = len(listInput)
     start_time_full = time.time()
@@ -190,14 +194,17 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
             val_acc = val_acc_metric.result()
             print(f'Validation acc: {float(val_acc)*100:.2f}%')
             val_acc_metric.reset_state()
-
+            
+            if save_iter != 0 and (j + 1) % save_iter == 0:
+                saveModel(model, checkpoint_path)
+        
         end_time = time.time()
         elapsed_time = end_time - start_time
         minutes = elapsed_time // 60
         remaining_seconds = elapsed_time % 60
         print(f"Batch time: {int(minutes)} minutes {remaining_seconds:.2f} seconds")
 
-        if i % save_epoch == 0:
+        if (i + 1) % save_epoch == 0:
             saveModel(model, checkpoint_path)
         saveEpochFile(epochFilePath, i)
 
@@ -288,12 +295,15 @@ def parse_arguments(argv):
     parser.add_argument('--epochs', type=int, help='Number of epochs for training', default=10)
     parser.add_argument('--save_epoch', type=int, help='Number of epochs to save the model', default=10)
     parser.add_argument('--init_epoch', type=int, help='Initial epoch for model training (if 0, starts with the saved epoch file)', default=0)
+    parser.add_argument('--save_iter', type=int, help='Number of iterations to save the model', default=0)
+
 
     parser.add_argument('--batch_size', type=int, help='Batch size for epoch in training', default=32)
     parser.add_argument('--height', type=int, help='Image height resize', default=375)
     parser.add_argument('--width', type=int, help='Image width resize', default=500)
     
     parser.add_argument('--loadCheckPoint', type=str2bool, help='Enable Checkpoint Load', default='True')
+    parser.add_argument('--quantization', type=str2bool, help='Enable Checkpoint Load', default='False')
     
     return parser.parse_args(argv)
 

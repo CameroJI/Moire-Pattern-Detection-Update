@@ -5,4 +5,4 @@ PyWavelets
 scikit-learn
 scikit-image
 np_utils
-creme
+tensorflow_model_optimization
