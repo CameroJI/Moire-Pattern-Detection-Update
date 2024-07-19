@@ -11,7 +11,6 @@ from os import listdir
 from os.path import join, exists
 from PIL import Image
 import io
-from mCNN import createModel
 from haar2D import fwdHaarDWT2D
 from train import createElements, defineEpochRange, scaleData
 import random
@@ -25,7 +24,8 @@ def load_model(model_path):
     model_extension = Path(model_path).suffix.lower()
 
     if model_extension in ['.h5', '.keras']:
-        return tf.keras.models.load_model(model_path)
+        model = tf.keras.models.load_model(model_path, compile=False)
+        return model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     
     elif model_extension == '.tflite':
         interpreter = tf.lite.Interpreter(model_path=model_path)

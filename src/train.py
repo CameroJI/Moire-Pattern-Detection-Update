@@ -50,7 +50,7 @@ def main(args):
     if not exists(checkpointPath):
         makedirs(checkpointPath)
         
-    model = createModel(height=height, width=width, depth=1, num_classes=numClasses, quantization=quantization)
+    model = createModel(height=height, width=width, depth=1, num_classes=numClasses)
     
     model.compile(loss='categorical_crossentropy', # using the cross-entropy loss function
         optimizer='adam', # using the Adam optimizer
@@ -222,7 +222,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
         
 def saveModel(model, checkpoint_path):
     print("Saving model... ", end='')
-    model.save(checkpoint_path)
+    model.save(checkpoint_path, include_optimizer=False)
     print("Model Saved.")
             
 
@@ -271,7 +271,7 @@ def getBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
     X_HL = X_HL.reshape((totalBatchSize, height, width, 1))
     X_HH = X_HH.reshape((totalBatchSize, height, width, 1))
     
-    return X_LL.astype(np.float32), X_LH.astype(np.float32), X_HL.astype(np.float32), X_HH.astype(np.float32)
+    return X_LL.astype(np.float32), X_LH.astype(np.float32), X_HL.astype(np.float32), X_HH.astype(np.float32), Y
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1', 'True'):
