@@ -176,7 +176,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
             start, end = defineEpochRange(j, batch_size, n)            
             X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train = getBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
             Y_train = to_categorical(Y_train, numClasses)
-
+            
             loss = train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train)
             print("------------------------------------")
             print(f"Training {end - start} images ({j + 1}/{ceil(n/batch_size)})", end='\t')
@@ -271,7 +271,7 @@ def getBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
     X_HL = X_HL.reshape((totalBatchSize, height, width, 1))
     X_HH = X_HH.reshape((totalBatchSize, height, width, 1))
     
-    return X_LL, X_LH, X_HL, X_HH, Y
+    return X_LL.astype(np.float32), X_LH.astype(np.float32), X_HL.astype(np.float32), X_HH.astype(np.float32)
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1', 'True'):

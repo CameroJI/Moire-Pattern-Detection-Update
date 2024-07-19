@@ -13,8 +13,8 @@ def main(args):
     # Convertir el modelo a TensorFlow Lite
     converter = tensorflow.lite.TFLiteConverter.from_keras_model(model)
     
-    #converter.optimizations = [tensorflow.lite.Optimize.DEFAULT]  # Opcional: para optimizaciones
-    converter.optimizations = [tensorflow.lite.Optimize.EXPERIMENTAL_MODE_AWARE_QUANTIZATION]  # Opcional: para optimizaciones
+    converter.optimizations = [tensorflow.lite.Optimize.DEFAULT]  # Opcional: para optimizaciones
+    #converter.optimizations = [tensorflow.lite.Optimize.EXPERIMENTAL_MODE_AWARE_QUANTIZATION]  # Opcional: para optimizaciones
 
     tflite_model = converter.convert()
 
