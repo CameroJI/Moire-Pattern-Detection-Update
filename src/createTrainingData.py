@@ -11,12 +11,19 @@ from PIL import Image
 from haar2D import fwdHaarDWT2D
 from threading import Thread
 
+width = 0
+height = 0
+
 def main(args):
+    global width, height
     origenPositiveImages = (args.origenPositiveImages)
     origenNegativeImages = (args.origenNegativeImages)
     
     outputPositiveImages = (args.outputPositiveImages)
     outputNegativeImages = (args.outputNegativeImages)
+    
+    width = (args.width)
+    height = (args.height)
     
     createTrainingData(origenPositiveImages, origenNegativeImages, outputPositiveImages, outputNegativeImages)
 
@@ -42,6 +49,8 @@ def transformImageAndSave(image, f, customStr, path):
     
     
 def augmentAndTransformImage(f, mainFolder, trainFolder):
+    global width, height
+    
     try:
         img = Image.open(join(mainFolder, f))
     except Exception:
@@ -49,7 +58,7 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
         return None
 
     w, h = img.size
-    img = img.resize((750, 1000)) if h > w else img.resize((1000, 750))
+    img = img.resize((width, height)) if h > w else img.resize((height, width))
     imgGray = img.convert('L')
     wdChk, htChk = imgGray.size
     if htChk > wdChk:
@@ -123,6 +132,9 @@ def parse_arguments(argv):
 
     parser.add_argument('--outputPositiveImages', type=str, help='Directory with transformed positive Images.')
     parser.add_argument('--outputNegativeImages', type=str, help='Directory with transformed negative Images.')
+    
+    parser.add_argument('--width', type=int, help='width of the images.', default=1000)
+    parser.add_argument('--height', type=int, help='height of the images.', default=750)
     
     return parser.parse_args(argv)
 
