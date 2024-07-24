@@ -39,9 +39,7 @@ def main(args):
     
     height = (args.height)
     width = (args.width)
-    
-    quantization = (args.quantization)
-    
+        
     trainIndex, numClasses = createIndex(positiveImagePath, negativeImagePath)
 
     epochFilePath = f"{checkpointPath}/epoch.txt"
