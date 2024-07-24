@@ -150,8 +150,8 @@ def epochFileValidation(path, loadFlag, init_epoch):
 
 def saveEpochFile(epochFilePath, epoch):
     with open(epochFilePath, 'w') as epochFile:
-        epochFile.write(str(epoch + 1))
-        print(f"\nEpoch Save: {epoch + 1}")
+        epochFile.write(str(epoch))
+        print(f"\nEpoch Save: {epoch}")
         
 @tensorflow.function
 def train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train):
@@ -170,6 +170,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
     n = len(listInput)
     start_time_full = time.time()
     for i in range(epochs - epoch):
+        saveEpochFile(epochFilePath, i + 1)
         print(f"epoch: {i + epoch + 1}/{epochs}\n")
         start_time = time.time()
         for j in range(ceil(n/batch_size)):
@@ -206,8 +207,6 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
 
         if (i + 1) % save_epoch == 0:
             saveModel(model, checkpoint_path)
-        saveEpochFile(epochFilePath, i)
-
         print("------------------------------------")
     saveModel(model, checkpoint_path)
 
