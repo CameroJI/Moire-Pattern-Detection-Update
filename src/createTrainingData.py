@@ -2,38 +2,33 @@ import sys
 import argparse
 from PIL import Image
 from PIL import ImageOps
-import sys
 import os
 import time
 from os import listdir
 from os.path import isfile, join
-from PIL import Image
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from haar2D import fwdHaarDWT2D
-from threading import Thread
 
 width = 0
 height = 0
 
 def main(args):
     global width, height
-    origenPositiveImages = (args.origenPositiveImages)
-    origenNegativeImages = (args.origenNegativeImages)
+    origenPositiveImages = args.origenPositiveImages
+    origenNegativeImages = args.origenNegativeImages
     
-    outputPositiveImages = (args.outputPositiveImages)
-    outputNegativeImages = (args.outputNegativeImages)
+    outputPositiveImages = args.outputPositiveImages
+    outputNegativeImages = args.outputNegativeImages
     
-    width = (args.width)
-    height = (args.height)
+    width = args.width
+    height = args.height
     
     createTrainingData(origenPositiveImages, origenNegativeImages, outputPositiveImages, outputNegativeImages)
 
-    
-#The wavelet decomposed images are the transformed images representing the spatial and the frequency information of the image. These images are stored as 'tiff' in the disk, to preserve that information. Each image is transformed with 180 degrees rotation and as well flipped, as part of data augmentation.
-
 def transformImageAndSave(image, f, customStr, path):
-    cA, cH, cV, cD  = fwdHaarDWT2D(image)
+    cA, cH, cV, cD = fwdHaarDWT2D(image)
 
-    fileName = (os.path.splitext(f)[0])
+    fileName = os.path.splitext(f)[0]
     fLL = f.replace(fileName, f'{fileName}_{customStr}LL').replace(os.path.splitext(f)[-1], '.tiff')
     fLH = f.replace(fileName, f'{fileName}_{customStr}LH').replace(os.path.splitext(f)[-1], '.tiff')
     fHL = f.replace(fileName, f'{fileName}_{customStr}HL').replace(os.path.splitext(f)[-1], '.tiff')
@@ -46,11 +41,10 @@ def transformImageAndSave(image, f, customStr, path):
     cH.save(join(path, fLH))
     cV.save(join(path, fHL))
     cD.save(join(path, fHH))
-    
-    
+
 def augmentAndTransformImage(f, mainFolder, trainFolder):
     global width, height
-    
+
     try:
         img = Image.open(join(mainFolder, f))
     except Exception:
@@ -58,7 +52,7 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
         return None
 
     w, h = img.size
-    img = img.resize((width, height)) if h > w else img.resize((height, width))
+    img = img.resize((height, width)) if h > w else img.resize((width, height))
     imgGray = img.convert('L')
     wdChk, htChk = imgGray.size
     if htChk > wdChk:
@@ -72,13 +66,11 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
     transformImageAndSave(imgGray, f, '180_FLIP_', trainFolder)
 
     return True
-    
-    
+
 def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputPositiveImagePath, outputNegativeImagePath):
-    
     # get image files by classes
-    positiveImageFiles = [f for f in listdir(origenPositiveImagePath) if (isfile(join(origenPositiveImagePath, f)))]
-    negativeImageFiles = [f for f in listdir(origenNegativeImagePath) if (isfile(join(origenNegativeImagePath, f)))]
+    positiveImageFiles = [f for f in listdir(origenPositiveImagePath) if isfile(join(origenPositiveImagePath, f))]
+    negativeImageFiles = [f for f in listdir(origenNegativeImagePath) if isfile(join(origenNegativeImagePath, f))]
 
     positiveCount = len(positiveImageFiles)
     negativeCount = len(negativeImageFiles)
@@ -96,27 +88,28 @@ def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputP
     Kpositive = 0
 
     start_time = time.time()
-    # create positive training images
-    for n, f in enumerate(positiveImageFiles):
-        ret = augmentAndTransformImage(f, origenPositiveImagePath, outputPositiveImagePath)
-        print(f"Transformed Positive Image {n + 1}/{positiveCount}")
-        if ret is None:
-            continue
-        Kpositive += 3
-        n += 1
 
-    # create negative training images
-    for n, f in enumerate(negativeImageFiles):
-        ret = augmentAndTransformImage(f, origenNegativeImagePath, outputNegativeImagePath)
-        print(f"Transformed Negative Image {n + 1}/{negativeCount}")
-        if ret is None:
-            continue
-        Knegative += 3
-        n += 1
+    # create positive training images using multithreading
+    with ThreadPoolExecutor() as executor:
+        future_to_image = {executor.submit(augmentAndTransformImage, f, origenPositiveImagePath, outputPositiveImagePath): f for f in positiveImageFiles}
+        for n, future in enumerate(as_completed(future_to_image)):
+            ret = future.result()
+            print(f"Transformed Positive Image {n + 1}/{positiveCount}")
+            if ret is not None:
+                Kpositive += 3
+
+    # create negative training images using multithreading
+    with ThreadPoolExecutor() as executor:
+        future_to_image = {executor.submit(augmentAndTransformImage, f, origenNegativeImagePath, outputNegativeImagePath): f for f in negativeImageFiles}
+        for n, future in enumerate(as_completed(future_to_image)):
+            ret = future.result()
+            print(f"Transformed Negative Image {n + 1}/{negativeCount}")
+            if ret is not None:
+                Knegative += 3
 
     print('Total positive files after augmentation: ', Kpositive)
     print('Total negative files after augmentation: ', Knegative)
-    
+
     end_time = time.time()
     elapsed_time = end_time - start_time
     hours = elapsed_time // 3600
