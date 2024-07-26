@@ -226,7 +226,7 @@ def imageTransformation(imageRoot, f, height, width):
         return None
 
     w, h = img.size
-    img = img.resize((750, 1000)) if h > w else img.resize((1000, 750))
+    img = img.resize((height, width)) if h > w else img.resize((width, height))
     imgGray = img.convert('L')
     wdChk, htChk = imgGray.size
     if htChk > wdChk:
