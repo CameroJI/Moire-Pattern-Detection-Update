@@ -46,9 +46,9 @@ def main(args):
     datasetList, numClasses = createIndex(positiveImagePath, negativeImagePath)
     
     if exists(weights_file):
-        print("Modelo encontrado y cargado correctamente!\n")
         CNN_model = load_model(weights_file)
         evaluateFolder(CNN_model, datasetList, positiveImagePath, negativeImagePath, batch_size, numClasses, height, width)
+        print("Modelo encontrado y cargado correctamente!\n")
     else:
         print("El archivo del modelo no existe en el directorio establecido.")
     
