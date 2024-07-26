@@ -1,5 +1,3 @@
-#Use this file for evaluating on a dataset that is not used for training
-
 from pathlib import Path
 from matplotlib import pyplot as plt
 import numpy as np
@@ -7,7 +5,7 @@ import sys
 import argparse
 import time
 from math import ceil
-from os import listdir
+from os import listdir, makedirs
 from os.path import join, exists
 from PIL import Image
 import io
@@ -16,7 +14,7 @@ from train import createElements, defineEpochRange, scaleData
 import random
 from keras.utils import to_categorical # type: ignore
 import tensorflow as tf
-    
+
 test_loss = tf.keras.metrics.Mean(name='test_loss')
 test_accuracy = tf.keras.metrics.BinaryAccuracy(name='test_accuracy')
 
@@ -37,35 +35,35 @@ def load_model(model_path):
         raise ValueError(f"Unsupported model file format: {model_extension}")
     
 def main(args):
-    weights_file = (args.weightsFile)
-    positiveImagePath = (args.positiveTestImages)
-    negativeImagePath = (args.negativeTestImages)
-    batch_size = (args.batch_size)
-    height = (args.height)
-    width = (args.width)
+    weights_file = args.weightsFile
+    positiveImagePath = args.positiveTestImages
+    negativeImagePath = args.negativeTestImages
+    batch_size = args.batch_size
+    height = args.height
+    width = args.width
+    incorrect_images_dir = args.incorrectImagesDir
+    
+    if not exists(incorrect_images_dir):
+        makedirs(incorrect_images_dir)
     
     datasetList, numClasses = createIndex(positiveImagePath, negativeImagePath)
     
     if exists(weights_file):
         CNN_model = load_model(weights_file)
-        evaluateFolder(CNN_model, datasetList, positiveImagePath, negativeImagePath, batch_size, numClasses, height, width)
+        evaluateFolder(CNN_model, datasetList, positiveImagePath, negativeImagePath, batch_size, numClasses, height, width, incorrect_images_dir)
         print("Modelo encontrado y cargado correctamente!\n")
     else:
         print("El archivo del modelo no existe en el directorio establecido.")
     
-def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels):
+def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels, incorrect_images_dir, dataset, posPath, negPath):
     if isinstance(model, tf.keras.Model):
         predictions = model([X_LL_test, X_LH_test, X_HL_test, X_HH_test], training=False)
         
     elif isinstance(model, tf.lite.Interpreter):
-        # Obtener detalles de las entradas y salidas
         input_details = model.get_input_details()
         output_details = model.get_output_details()
         
-        # Número de muestras
         N = X_LL_test.shape[0]
-
-        # Almacenar resultados
         results = []
 
         for i in range(N):
@@ -74,20 +72,15 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels):
             sample_HL = np.array([X_HL_test[i]]).astype(np.float32)
             sample_HH = np.array([X_HH_test[i]]).astype(np.float32)
                         
-            # Configurar las entradas del intérprete TensorFlow Lite
             model.set_tensor(input_details[0]['index'], sample_LL)
             model.set_tensor(input_details[1]['index'], sample_LH)
             model.set_tensor(input_details[2]['index'], sample_HL)
             model.set_tensor(input_details[3]['index'], sample_HH)
 
-            # Ejecutar el intérprete
             model.invoke()
-
-            # Obtener los resultados del intérprete
             output_data = model.get_tensor(output_details[0]['index'])
             results.append(output_data)
 
-        # Convertir resultados a un array de numpy
         predictions = np.squeeze(np.array(results), axis=1)
     else:
         raise TypeError("Unsupported model type")
@@ -95,10 +88,20 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels):
     t_loss = tf.keras.losses.binary_crossentropy(labels, predictions)
     test_loss(t_loss)
     test_accuracy(labels, predictions)
-
-    return test_loss.result(), test_accuracy.result()
     
-def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, height, width):
+    # Guardar imágenes incorrectas
+    incorrect_indices = np.where(np.argmax(predictions, axis=1) != np.argmax(labels, axis=1))[0]
+    for idx in incorrect_indices:
+        image_name = dataset[idx][0]
+        image_path = join(posPath if dataset[idx][1] == 1 else negPath, image_name)
+        save_path = join(incorrect_images_dir, image_name)
+        
+        img = Image.open(image_path)
+        img.save(save_path)
+    
+    return test_loss.result(), test_accuracy.result()
+
+def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, height, width, incorrect_images_dir):
     n = len(listInput)
     total_loss = 0
     total_accuracy = 0
@@ -122,7 +125,7 @@ def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, h
         data = np.array(data)
         labels = np.array(labels)
         
-        loss, accuracy = test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels)
+        loss, accuracy = test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels, incorrect_images_dir, listInput[start:end], posPath, negPath)
         if i==0:    print()
         print(f"Testing {end - start} images ({i + 1}/{steps})", end='\t')
         print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}')
@@ -138,15 +141,14 @@ def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, h
         print(f"Batch time: {int(minutes)} minutes {remaining_seconds:.2f} seconds")
         print("------------------------------------")
 
-    # Iterar sobre el dataset y calcular la precisión y la pérdida
     print(f'\nTotal Loss: {total_loss}')
     print(f'Total Accuracy: {total_accuracy}')
 
     mean_loss = total_loss / steps
     mean_accuracy = total_accuracy / steps   
 
-    print(f'\nMean Loss: {mean_loss*100:2f}%')
-    print(f'Mean Accuracy: {mean_accuracy*100:2f}%')
+    print(f'\nMean Loss: {mean_loss*100:.2f}%')
+    print(f'Mean Accuracy: {mean_accuracy*100:.2f}%')
     
     end_time_full = time.time()
     elapsed_time = end_time_full - start_time_full
@@ -162,7 +164,6 @@ def createIndex(posPath, negPath):
     datasetList = [(i, 1) for i in posList]
     datasetList.extend((i, 0) for i in negList)
 
-    #dataset split for training and evaluation
     random.shuffle(datasetList)
     
     classes = len(np.unique(np.array([fila[1] for fila in datasetList])))
@@ -213,8 +214,14 @@ def readAndBuildBatch(f, posPath, negPath, height, width):
     y = int(f[1])
     path = posPath if y == 1 else negPath
     
-    cA, cH, cV, cD = imageTransformation(path, file, height, width)
-    
+    try:
+        cA, cH, cV, cD = imageTransformation(path, file, height, width)
+    except Exception:
+        print(f'No se pudo leer el archivo {file} en la carpeta {path}')
+        cA = Image.open(getTiffFromJpg(Image.fromarray(np.random.rand(width, height))))
+        cH = Image.open(getTiffFromJpg(Image.fromarray(np.random.rand(width, height))))
+        cV = Image.open(getTiffFromJpg(Image.fromarray(np.random.rand(width, height))))
+        cD = Image.open(getTiffFromJpg(Image.fromarray(np.random.rand(width, height))))
     return cA, cH, cV, cD
     
 
@@ -271,9 +278,9 @@ def parse_arguments(argv):
     parser.add_argument('--height', type=int, help='Image height resize', default=375)
     parser.add_argument('--width', type=int, help='Image width resize', default=500)
     
+    parser.add_argument('--incorrectImagesDir', type=str, help='Directory to save incorrect predictions.', default='./incorrect_predictions')
+    
     return parser.parse_args(argv)
 
 if __name__ == '__main__':
     main(parse_arguments(sys.argv[1:]))
-    
-    
