@@ -25,7 +25,8 @@ def load_model(model_path):
 
     if model_extension in ['.h5', '.keras']:
         model = tf.keras.models.load_model(model_path, compile=False)
-        return model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        return model
     
     elif model_extension == '.tflite':
         interpreter = tf.lite.Interpreter(model_path=model_path)
