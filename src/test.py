@@ -5,7 +5,7 @@ import sys
 import argparse
 import time
 from math import ceil
-from os import listdir, makedirs
+from os import listdir, makedirs, remove
 from os.path import join, exists
 from PIL import Image
 import io
@@ -217,11 +217,8 @@ def readAndBuildBatch(f, posPath, negPath, height, width):
     try:
         cA, cH, cV, cD = imageTransformation(path, file, height, width)
     except Exception:
-        print(f'No se pudo leer el archivo {file} en la carpeta {path}')
-        cA = Image.open(getTiffFromJpg(Image.fromarray(np.random.rand(width, height))))
-        cH = Image.open(getTiffFromJpg(Image.fromarray(np.random.rand(width, height))))
-        cV = Image.open(getTiffFromJpg(Image.fromarray(np.random.rand(width, height))))
-        cD = Image.open(getTiffFromJpg(Image.fromarray(np.random.rand(width, height))))
+        print(f'No se pudo leer el archivo {file} en la carpeta {path}, por lo que se eliminará.')
+        remove(join(path, file))
     return cA, cH, cV, cD
     
 
