@@ -82,18 +82,7 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, filePredictionD
     else:
         raise TypeError("Unsupported model type")
     
-    confidences = tf.nn.sigmoid(predictions).numpy()
-
-    
-    '''# Guardar imágenes incorrectas
-    incorrect_indices = np.where(np.argmax(predictions, axis=1) != np.argmax(labels, axis=1))[0]
-    for idx in incorrect_indices:
-        image_name = dataset[idx]
-        image_path = join(path)
-        save_path = join(filePredictionDir, image_name)
-        
-        img = Image.open(image_path)
-        img.save(save_path)'''
+    confidences = predictions.numpy()
         
     # Guardar imágenes incorrectas
     positive_incertudumbre = []
@@ -102,20 +91,22 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, filePredictionD
     negative_predictions = []
 
     for idx, confidence in enumerate(confidences):
-        pred_label = np.argmax(predictions[idx])
         image_name = dataset[idx]
-        image_path = join(path, image_name)
+        image_path = join((path.split('/')[-1]).replace('_clonadas',''), image_name.replace('_front_large.jpg', ''))
         
-        if pred_label == 1:  # True Positive
-            if confidence[0] == 1.0:
+        if confidence[1] > confidence[0]:  # True Positive
+            if confidence[1] >= 0.9:
                 positive_predictions.append(image_path)
             else:
                 positive_incertudumbre.append(image_path)
         else:  # True Negative
-            if confidence[0] == 1.0:
+            if confidence[0] >= 0.9:
                 negative_predictions.append(image_path)
             else:
-                positive_incertudumbre.append(image_path)
+                negative_incertudumbre.append(image_path)
+                
+    print(f'Predicciones positivas : {len(positive_predictions)}\nPredicciones negativas : {len(negative_predictions)}\n')
+    print(f'Predicciones positivas con incertidumbre: {len(positive_incertudumbre)}\nPredicciones negativas con incertidumbre: {len(negative_incertudumbre)}\n')
 
     # Save filenames to text files  
     writeImageInFile(filePredictionDir, 'Real_predictions.txt', positive_predictions)
