@@ -90,7 +90,7 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, filePredictionD
 
     for idx, confidence in enumerate(confidences):
         image_name = dataset[idx]
-        image_path = join((path.split('/')[-1]).replace('_clonadas',''), image_name.split('_')[-1])
+        image_path = join((path.split('/')[-1]).replace('_clonadas',''), image_name.split('_')[0])
         
         if confidence[1] > confidence[0]:  # True Positive
             if confidence[1] >= 0.9:
