@@ -90,7 +90,7 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, filePredictionD
 
     for idx, confidence in enumerate(confidences):
         image_name = dataset[idx]
-        image_path = join((path.split('/')[-1]).replace('_clonadas',''), image_name.split('_')[0])
+        image_path = join((path.split('/')[-1]).replace('_clonadas',''), image_name.split("_")[0])
         
         if confidence[1] > confidence[0]:  # True Positive
             if confidence[1] >= 0.9:
@@ -108,7 +108,12 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, filePredictionD
 
     # Save filenames to text files  
     writeImageInFile(filePredictionDir, 'Real_predictions.txt', positive_predictions)
-    writeImageInFile(filePredictionDir, 'Ataque_predictions.txt', negative_predictions) 
+    writeImageInFile(filePredictionDir, 'Ataque_predictions.txt', negative_predictions)
+    writeImageInFile(filePredictionDir, 'Real_incertudumbre.txt', positive_incertudumbre)
+    writeImageInFile(filePredictionDir, 'Ataque_incertudumbre.txt', negative_incertudumbre)
+            
+def writeImageInFile(root, file, listNames):
+    with open(join(root, file), 'a') as f:
         for name in listNames:
             f.write(f"{name}\n")
     
