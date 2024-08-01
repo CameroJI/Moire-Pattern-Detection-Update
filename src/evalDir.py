@@ -11,8 +11,6 @@ from PIL import Image
 import io
 from haar2D import fwdHaarDWT2D
 from train import createElements, defineEpochRange, scaleData
-import random
-from keras.utils import to_categorical # type: ignore
 import tensorflow as tf
 
 def load_model(model_path):
