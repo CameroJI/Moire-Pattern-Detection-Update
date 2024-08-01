@@ -83,8 +83,8 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, filePredictionD
     confidences = predictions.numpy()
         
     # Guardar imágenes incorrectas
-    positive_incertudumbre = []
-    negative_incertudumbre = []
+    positive_incertidumbre = []
+    negative_incertidumbre = []
     positive_predictions = []
     negative_predictions = []
 
@@ -96,21 +96,21 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, filePredictionD
             if confidence[1] >= 0.9:
                 positive_predictions.append(image_path)
             else:
-                positive_incertudumbre.append(image_path)
+                positive_incertidumbre.append(image_path)
         else:  # True Negative
             if confidence[0] >= 0.9:
                 negative_predictions.append(image_path)
             else:
-                negative_incertudumbre.append(image_path)
+                negative_incertidumbre.append(image_path)
                 
     print(f'Predicciones positivas : {len(positive_predictions)}\nPredicciones negativas : {len(negative_predictions)}\n')
-    print(f'Predicciones positivas con incertidumbre: {len(positive_incertudumbre)}\nPredicciones negativas con incertidumbre: {len(negative_incertudumbre)}\n')
+    print(f'Predicciones positivas con incertidumbre: {len(positive_incertidumbre)}\nPredicciones negativas con incertidumbre: {len(negative_incertidumbre)}\n')
 
     # Save filenames to text files  
     writeImageInFile(filePredictionDir, 'Real_predictions.txt', positive_predictions)
     writeImageInFile(filePredictionDir, 'Ataque_predictions.txt', negative_predictions)
-    writeImageInFile(filePredictionDir, 'Real_incertudumbre.txt', positive_incertudumbre)
-    writeImageInFile(filePredictionDir, 'Ataque_incertudumbre.txt', negative_incertudumbre)
+    writeImageInFile(filePredictionDir, 'Real_incertidumbre.txt', positive_incertidumbre)
+    writeImageInFile(filePredictionDir, 'Ataque_incertidumbre.txt', negative_incertidumbre)
             
 def writeImageInFile(root, file, listNames):
     with open(join(root, file), 'a') as f:
