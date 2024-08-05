@@ -1,5 +1,4 @@
 from pathlib import Path
-from matplotlib import pyplot as plt
 import numpy as np
 import sys
 import argparse
@@ -90,18 +89,18 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, filePredictionD
 
     for idx, confidence in enumerate(confidences):
         image_name = dataset[idx]
-        image_path = join((path.split('/')[-1]).replace('_clonadas',''), image_name.split("_")[0])
+        #image_path = join((path.split('/')[-1]).replace('_clonadas',''), image_name.split("_")[0])
         
         if confidence[1] > confidence[0]:  # True Positive
             if confidence[1] >= 0.9:
-                positive_predictions.append(image_path)
+                positive_predictions.append(image_name)
             else:
-                positive_incertidumbre.append(image_path)
+                positive_incertidumbre.append(image_name)
         else:  # True Negative
             if confidence[0] >= 0.9:
-                negative_predictions.append(image_path)
+                negative_predictions.append(image_name)
             else:
-                negative_incertidumbre.append(image_path)
+                negative_incertidumbre.append(image_name)
                 
     print(f'Predicciones positivas : {len(positive_predictions)}\nPredicciones negativas : {len(negative_predictions)}\n')
     print(f'Predicciones positivas con incertidumbre: {len(positive_incertidumbre)}\nPredicciones negativas con incertidumbre: {len(negative_incertidumbre)}\n')
