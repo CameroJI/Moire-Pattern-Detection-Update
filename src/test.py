@@ -24,11 +24,13 @@ def load_model(model_path):
     if model_extension in ['.h5', '.keras']:
         model = tf.keras.models.load_model(model_path, compile=False)
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        print(f"Modelo {model_extension} encontrado y cargado correctamente!\n")
         return model
     
     elif model_extension == '.tflite':
         interpreter = tf.lite.Interpreter(model_path=model_path)
         interpreter.allocate_tensors()
+        print("Modelo .tflite encontrado y cargado correctamente!\n")
         return interpreter
     
     else:
@@ -50,7 +52,6 @@ def main(args):
     
     if exists(weights_file):
         CNN_model = load_model(weights_file)
-        print("Modelo encontrado y cargado correctamente!\n")
         evaluateFolder(CNN_model, datasetList, positiveImagePath, negativeImagePath, batch_size, numClasses, height, width, incorrect_images_dir)
     else:
         print("El archivo del modelo no existe en el directorio establecido.")
