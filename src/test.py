@@ -50,8 +50,8 @@ def main(args):
     
     if exists(weights_file):
         CNN_model = load_model(weights_file)
-        evaluateFolder(CNN_model, datasetList, positiveImagePath, negativeImagePath, batch_size, numClasses, height, width, incorrect_images_dir)
         print("Modelo encontrado y cargado correctamente!\n")
+        evaluateFolder(CNN_model, datasetList, positiveImagePath, negativeImagePath, batch_size, numClasses, height, width, incorrect_images_dir)
     else:
         print("El archivo del modelo no existe en el directorio establecido.")
     
