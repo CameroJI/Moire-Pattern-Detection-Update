@@ -58,7 +58,7 @@ def main(args):
 def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels, incorrect_images_dir, dataset, posPath, negPath):
     if isinstance(model, tf.keras.Model):
         predictions = model([X_LL_test, X_LH_test, X_HL_test, X_HH_test], training=False)
-        
+    
     elif isinstance(model, tf.lite.Interpreter):
         input_details = model.get_input_details()
         output_details = model.get_output_details()
@@ -89,8 +89,17 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels, incorre
     test_loss(t_loss)
     test_accuracy(labels, predictions)
     
+    # Calcular métricas
+    pred_labels = np.argmax(predictions, axis=1)
+    true_labels = np.argmax(labels, axis=1)
+
+    true_positive = np.sum((pred_labels == 1) & (true_labels == 1))
+    true_negative = np.sum((pred_labels == 0) & (true_labels == 0))
+    false_positive = np.sum((pred_labels == 1) & (true_labels == 0))
+    false_negative = np.sum((pred_labels == 0) & (true_labels == 1))
+
     # Guardar imágenes incorrectas
-    incorrect_indices = np.where(np.argmax(predictions, axis=1) != np.argmax(labels, axis=1))[0]
+    incorrect_indices = np.where(pred_labels != true_labels)[0]
     for idx in incorrect_indices:
         image_name = dataset[idx][0]
         image_path = join(posPath if dataset[idx][1] == 1 else negPath, image_name)
@@ -98,14 +107,18 @@ def test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels, incorre
         
         img = Image.open(image_path)
         img.save(save_path)
-    
-    return test_loss.result(), test_accuracy.result()
+
+    return test_loss.result(), test_accuracy.result(), true_positive, true_negative, false_positive, false_negative
 
 def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, height, width, incorrect_images_dir):
     n = len(listInput)
     total_loss = 0
     total_accuracy = 0
-    steps = ceil(n/batch_size)
+    total_true_positive = 0
+    total_true_negative = 0
+    total_false_positive = 0
+    total_false_negative = 0
+    steps = ceil(n / batch_size)
     print()
     
     test_loss.reset_state()
@@ -125,14 +138,23 @@ def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, h
         data = np.array(data)
         labels = np.array(labels)
         
-        loss, accuracy = test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels, incorrect_images_dir, listInput[start:end], posPath, negPath)
-        if i==0:    print()
+        loss, accuracy, true_positive, true_negative, false_positive, false_negative = test_step(model, X_LL_test, X_LH_test, X_HL_test, X_HH_test, labels, incorrect_images_dir, listInput[start:end], posPath, negPath)
+        if i == 0:
+            print()
         print(f"Testing {end - start} images ({i + 1}/{steps})", end='\t')
         print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}')
-        print(f'Test Loss: {loss*100:.2f}%\t Test Accuracy: {accuracy*100:.2f}%\n')
+        print(f'Test Loss: {loss*100:.2f}%\t Test Accuracy: {accuracy*100:.2f}%')
+        print(f'True Reales: {true_positive}')
+        print(f'True Ataques: {true_negative}')
+        print(f'False Reales: {false_positive}')
+        print(f'False Ataques: {false_negative}\n')
         
         total_loss += loss
         total_accuracy += accuracy
+        total_true_positive += true_positive
+        total_true_negative += true_negative
+        total_false_positive += false_positive
+        total_false_negative += false_negative
         
         end_time = time.time()
         elapsed_time = end_time - start_time
@@ -149,13 +171,17 @@ def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, h
 
     print(f'\nMean Loss: {mean_loss*100:.2f}%')
     print(f'Mean Accuracy: {mean_accuracy*100:.2f}%')
+    print(f'\nTotal Verdaderos Reales: {total_true_positive}')
+    print(f'Total Verdaderos Ataques: {total_true_negative}')
+    print(f'Total Falsos Reales: {total_false_positive}')
+    print(f'Total Falsos Ataques: {total_false_negative}')
     
     end_time_full = time.time()
     elapsed_time = end_time_full - start_time_full
     hours = elapsed_time // 3600
     elapsed_time %= 3600
     minutes, seconds = divmod(elapsed_time, 60)
-    print(f"\nTotal testing time: {int(hours)} hours, {int(minutes)} minutes, {seconds:.2f} seconds.\n\n")     
+    print(f"\nTotal testing time: {int(hours)} hours, {int(minutes)} minutes, {seconds:.2f} seconds.\n\n") 
 
 def createIndex(posPath, negPath):
     posList = list(listdir(posPath))
