@@ -169,19 +169,28 @@ def evaluateFolder(model, listInput, posPath, negPath, batch_size, numClasses, h
     mean_loss = total_loss / steps
     mean_accuracy = total_accuracy / steps   
 
+    # Calcular porcentajes
+    nReales = np.sum([1 for _, label in listInput if label == 1])
+    nAtack = np.sum([1 for _, label in listInput if label == 0])
+    
+    percentage_true_positive = (total_true_positive / nReales) * 100
+    percentage_true_negative = (total_true_negative / nAtack) * 100
+    percentage_false_positive = (total_false_positive / nReales) * 100
+    percentage_false_negative = (total_false_negative / nAtack) * 100
+
     print(f'\nMean Loss: {mean_loss*100:.2f}%')
     print(f'Mean Accuracy: {mean_accuracy*100:.2f}%')
-    print(f'\nTotal Verdaderos Reales: {total_true_positive}')
-    print(f'Total Verdaderos Ataques: {total_true_negative}')
-    print(f'Total Falsos Reales: {total_false_positive}')
-    print(f'Total Falsos Ataques: {total_false_negative}')
+    print(f'Total Verdaderos Reales: {total_true_positive}\t\t{percentage_true_positive:.2f}%')
+    print(f'Total Verdaderos Ataques: {total_true_negative}\t{percentage_true_negative:.2f}%')
+    print(f'Total Falsos Reales: {total_false_positive}\t\t{percentage_false_positive:.2f}%')
+    print(f'Total Falsos Ataques: {total_false_negative}\t{percentage_false_negative:.2f}%')
     
     end_time_full = time.time()
     elapsed_time = end_time_full - start_time_full
     hours = elapsed_time // 3600
     elapsed_time %= 3600
     minutes, seconds = divmod(elapsed_time, 60)
-    print(f"\nTotal testing time: {int(hours)} hours, {int(minutes)} minutes, {seconds:.2f} seconds.\n\n") 
+    print(f"\nTotal testing time: {int(hours)} hours, {int(minutes)} minutes, {seconds:.2f} seconds.\n\n")
 
 def createIndex(posPath, negPath):
     posList = list(listdir(posPath))
