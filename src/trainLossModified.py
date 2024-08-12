@@ -15,24 +15,27 @@ from tensorflow import keras
 from keras.utils import to_categorical # type: ignore
 from keras.callbacks import ModelCheckpoint # type: ignore
 
-def custom_loss(penalty_factor):
-    def loss(y_true, y_pred):
-        y_true = tf.cast(y_true, tf.float32)
-        y_pred = tf.cast(y_pred, tf.float32)
-        
-        loss = tf.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=False)
-        incorrect_penalty = tf.reduce_sum(tf.multiply(y_true, 1 - y_pred), axis=-1)
-        
-        return loss + penalty_factor * incorrect_penalty
-
-    return loss
+def custom_loss(y_true, y_pred):
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+    
+    # Cálculo de la pérdida estándar
+    loss = tf.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=False)
+    
+    # Penalización para falsos positivos cuando y_true es 0 y y_pred es 1
+    false_positives = tf.reduce_sum((1 - y_true) * y_pred, axis=-1)
+    
+    return loss + penalty_factor * false_positives
 
 optimizer = keras.optimizers.Adam(learning_rate=1e-3)
 loss_fn = custom_loss
 train_acc_metric = keras.metrics.CategoricalAccuracy()
 val_acc_metric = keras.metrics.CategoricalAccuracy()
 
+penalty_factor = 2.5
+
 def main(args):
+    global penalty_factor
     positiveImagePath = (args.positiveImages)
     negativeImagePath = (args.negativeImages)
     
@@ -65,7 +68,7 @@ def main(args):
     model = createModel(height=height, width=width, depth=1, num_classes=numClasses)
     
     model.compile(
-                loss=custom_loss(penalty_factor),
+                loss=custom_loss,
                 optimizer='adam',
                 metrics=['accuracy'])
 
@@ -130,15 +133,33 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
 
     return True
 
+import tensorflow as tf
+import numpy as np
+from PIL import Image
+
 def apply_augmentation(image):
+    # Convert PIL image to numpy array
     image_np = np.array(image)
-    image_tf = tf.convert_to_tensor(image_np, dtype=tf.float32)
     
+    # Ensure the image is in 2-D grayscale format
+    if len(image_np.shape) != 2:
+        raise ValueError("The input image must be a 2-D grayscale image.")
+    
+    # Convert to a TensorFlow tensor and add a batch dimension
+    image_tf = tf.convert_to_tensor(image_np, dtype=tf.float32)
+    image_tf = tf.expand_dims(image_tf, axis=-1)  # Add channel dimension
+    
+    # Apply brightness and contrast adjustments
     image_tf = tf.image.random_brightness(image_tf, max_delta=0.1)
     image_tf = tf.image.random_contrast(image_tf, lower=0.9, upper=1.1)
     
-    image_augmented = tf.cast(image_tf, dtype=tf.uint8).numpy()
-    image_augmented = Image.fromarray(image_augmented)
+    # Remove channel dimension and convert back to uint8
+    image_tf = tf.squeeze(image_tf, axis=-1)  # Remove channel dimension
+    image_tf = tf.clip_by_value(image_tf, 0, 255)  # Clip values to valid range
+    image_tf = tf.cast(image_tf, dtype=tf.uint8)
+    
+    # Convert back to a PIL image
+    image_augmented = Image.fromarray(image_tf.numpy())
     
     return image_augmented
 
