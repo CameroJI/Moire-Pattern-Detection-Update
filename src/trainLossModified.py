@@ -10,7 +10,7 @@ from PIL import Image
 from sklearn import preprocessing
 import random
 from mCNN import createModel
-import tensorflow
+import tensorflow as tf
 from tensorflow import keras
 from keras.utils import to_categorical # type: ignore
 from keras.callbacks import ModelCheckpoint # type: ignore
@@ -19,15 +19,15 @@ optimizer = keras.optimizers.Adam(learning_rate=1e-3)
 
 def custom_loss(y_true, y_pred):
     # Asegúrate de que ambos tensores sean del mismo tipo
-    y_true = tensorflow.cast(y_true, tensorflow.float32)
-    y_pred = tensorflow.cast(y_pred, tensorflow.float32)
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
     
     # Calcula la pérdida estándar
-    loss = tensorflow.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=False)
+    loss = tf.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=False)
     
     # Penaliza más las predicciones incorrectas
     penalty_factor = 2.5
-    incorrect_penalty = tensorflow.reduce_sum(tensorflow.multiply(y_true, 1 - y_pred), axis=-1)
+    incorrect_penalty = tf.reduce_sum(tf.multiply(y_true, 1 - y_pred), axis=-1)
     
     return loss + penalty_factor * incorrect_penalty
 
@@ -91,6 +91,12 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
         imgHL = Image.open(join(trainImagePath, fHL))
         imgHH = Image.open(join(trainImagePath, fHH))
         
+        # DATA AUGMENTATION FOR TRAINING
+        imgLL = apply_augmentation(imgLL)
+        imgLH = apply_augmentation(imgLH)
+        imgHL = apply_augmentation(imgHL)
+        imgHH = apply_augmentation(imgHH)
+        
         imgLL = imgLL.resize((width, height))
         imgLH = imgLH.resize((width, height))
         imgHL = imgHL.resize((width, height))
@@ -123,6 +129,18 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
     X_index[sampleIndex, 0] = sampleIndex
 
     return True
+
+def apply_augmentation(image):
+    image_np = np.array(image)
+    image_tf = tf.convert_to_tensor(image_np, dtype=tf.float32)
+    
+    image_tf = tf.image.random_brightness(image_tf, max_delta=0.1)
+    image_tf = tf.image.random_contrast(image_tf, lower=0.9, upper=1.1)
+    
+    image_augmented = tf.cast(image_tf, dtype=tf.uint8).numpy()
+    image_augmented = Image.fromarray(image_augmented)
+    
+    return image_augmented
 
 def scaleData(inp, minimum, maximum):
     minMaxScaler = preprocessing.MinMaxScaler(copy=True, feature_range=(minimum,maximum))
@@ -166,11 +184,11 @@ def saveEpochFile(epochFilePath, epoch):
         epochFile.write(str(epoch))
         print(f"\nEpoch Save: {epoch}")
         
-@tensorflow.function
+@tf.function
 def train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train):
-    with tensorflow.GradientTape() as tape:
+    with tf.GradientTape() as tape:
         logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=True)  # Logits for this minibatch
-        loss_value = tensorflow.reduce_mean(loss_fn(Y_train, logits))
+        loss_value = tf.reduce_mean(loss_fn(Y_train, logits))
 
     grads = tape.gradient(loss_value, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights))
