@@ -15,22 +15,19 @@ from tensorflow import keras
 from keras.utils import to_categorical # type: ignore
 from keras.callbacks import ModelCheckpoint # type: ignore
 
+def custom_loss(penalty_factor):
+    def loss(y_true, y_pred):
+        y_true = tf.cast(y_true, tf.float32)
+        y_pred = tf.cast(y_pred, tf.float32)
+        
+        loss = tf.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=False)
+        incorrect_penalty = tf.reduce_sum(tf.multiply(y_true, 1 - y_pred), axis=-1)
+        
+        return loss + penalty_factor * incorrect_penalty
+
+    return loss
+
 optimizer = keras.optimizers.Adam(learning_rate=1e-3)
-
-def custom_loss(y_true, y_pred):
-    # Asegúrate de que ambos tensores sean del mismo tipo
-    y_true = tf.cast(y_true, tf.float32)
-    y_pred = tf.cast(y_pred, tf.float32)
-    
-    # Calcula la pérdida estándar
-    loss = tf.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=False)
-    
-    # Penaliza más las predicciones incorrectas
-    penalty_factor = 2.5
-    incorrect_penalty = tf.reduce_sum(tf.multiply(y_true, 1 - y_pred), axis=-1)
-    
-    return loss + penalty_factor * incorrect_penalty
-
 loss_fn = custom_loss
 train_acc_metric = keras.metrics.CategoricalAccuracy()
 val_acc_metric = keras.metrics.CategoricalAccuracy()
@@ -54,6 +51,8 @@ def main(args):
     
     height = (args.height)
     width = (args.width)
+    
+    penalty_factor = (args.penalty_factor)
         
     trainIndex, numClasses = createIndex(positiveImagePath, negativeImagePath)
 
@@ -65,9 +64,10 @@ def main(args):
         
     model = createModel(height=height, width=width, depth=1, num_classes=numClasses)
     
-    model.compile(loss=custom_loss, # Usa la función de pérdida personalizada
-                  optimizer='adam',
-                  metrics=['accuracy'])
+    model.compile(
+                loss=custom_loss(penalty_factor),
+                optimizer='adam',
+                metrics=['accuracy'])
 
     if loadCheckPoint:
         model.load_weights(checkpoint_path)
@@ -329,10 +329,10 @@ def parse_arguments(argv):
     parser.add_argument('--init_epoch', type=int, help='Initial epoch for model training (if 0, starts with the saved epoch file)', default=0)
     parser.add_argument('--save_iter', type=int, help='Number of iterations to save the model', default=0)
 
-
     parser.add_argument('--batch_size', type=int, help='Batch size for epoch in training', default=32)
-    parser.add_argument('--height', type=int, help='Image height resize', default=375)
-    parser.add_argument('--width', type=int, help='Image width resize', default=500)
+    parser.add_argument('--height', type=int, help='Image height resize', default=800)
+    parser.add_argument('--width', type=int, help='Image width resize', default=1400)
+    parser.add_argument('--penalty_factor', type=float, help='Penalty to False Positives predictions', default=2.5)
     
     parser.add_argument('--loadCheckPoint', type=str2bool, help='Enable Checkpoint Load', default='True')
     parser.add_argument('--quantization', type=str2bool, help='Enable Checkpoint Load', default='False')
