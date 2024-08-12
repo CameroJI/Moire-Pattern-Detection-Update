@@ -6,7 +6,7 @@ from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concat
 
 from keras import regularizers
 
-def createFineDetailModel(height, width, depth, num_classes):
+def createModel(height, width, depth, num_classes):
     kernel_size_small = 3
     kernel_size_large = 5
     pool_size = 2
@@ -47,7 +47,7 @@ def createFineDetailModel(height, width, depth, num_classes):
 
     drop_1 = Dropout(drop_prob_1)(S2)
     C5 = Conv2D(conv_depth_2, (kernel_size_small, kernel_size_small), padding='same', activation='relu', kernel_regularizer=regularizers.l2(0.01))(drop_1)
-    S3 = AveragePooling2D(pool_sizse=(pool_size, pool_size))(C5)
+    S3 = AveragePooling2D(pool_size=(pool_size, pool_size))(C5)
     C6 = Conv2D(conv_depth_2, (kernel_size_small, kernel_size_small), padding='same', activation='relu', kernel_regularizer=regularizers.l2(0.01))(S3)
     S4 = AveragePooling2D(pool_size=(pool_size, pool_size))(C6)
     drop_2 = Dropout(drop_prob_2)(S4)
