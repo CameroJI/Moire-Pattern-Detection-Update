@@ -170,7 +170,7 @@ def saveEpochFile(epochFilePath, epoch):
 def train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train):
     with tensorflow.GradientTape() as tape:
         logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=True)  # Logits for this minibatch
-        loss_value = loss_fn(Y_train, logits)
+        loss_value = tensorflow.reduce_mean(loss_fn(Y_train, logits))
 
     grads = tape.gradient(loss_value, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights))
@@ -193,12 +193,9 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
             
             loss = train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train)
             
-            # Convert the loss to a scalar value
-            loss_value = float(loss.numpy().item())  # Ensure it's a scalar
-            
             print("------------------------------------")
             print(f"Training {end - start} images ({j + 1}/{ceil(n/batch_size)})", end='\t')
-            print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss: {loss_value*100:.2f}%')
+            print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss: {loss*100:.2f}%')
             train_acc = train_acc_metric.result()
             print(f'\nTraining acc over batch: {float(train_acc.numpy())*100:.2f}%')
 
