@@ -8,7 +8,7 @@ from keras import regularizers
 
 def createModel(height, width, depth, num_classes):
     kernel_size_small = 3
-    kernel_size_large = 5
+    kernel_size_large = 7
     pool_size = 2
     conv_depth_1 = 32
     conv_depth_2 = 64
@@ -40,7 +40,7 @@ def createModel(height, width, depth, num_classes):
     # Bloques de atención o ajuste de detalle fino
     scale_1 = Conv2D(conv_depth_2, (kernel_size_small, kernel_size_small), padding='same', activation='relu', kernel_regularizer=regularizers.l2(0.01))(inp_merged)
     scale_2 = Conv2D(conv_depth_2, (kernel_size_large, kernel_size_large), padding='same', activation='relu', kernel_regularizer=regularizers.l2(0.01))(inp_merged)
-    scale_3 = Conv2D(conv_depth_2, (kernel_size_large + 2, kernel_size_large + 2), padding='same', activation='relu', kernel_regularizer=regularizers.l2(0.01))(inp_merged)
+    scale_3 = Conv2D(conv_depth_2, (kernel_size_large, kernel_size_large), padding='same', activation='relu', kernel_regularizer=regularizers.l2(0.01))(inp_merged)
 
     fused = Concatenate()([scale_1, scale_2, scale_3])
     S2 = AveragePooling2D(pool_size=(4, 4))(fused)
