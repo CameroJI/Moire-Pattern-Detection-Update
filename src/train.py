@@ -20,7 +20,7 @@ optimizer = keras.optimizers.Adam(learning_rate=1e-3)
 def custom_loss(y_true, y_pred):
     # Penaliza más las predicciones incorrectas
     loss = tensorflow.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=False)
-    penalty_factor = 2.0
+    penalty_factor = 2.5
     incorrect_penalty = tensorflow.reduce_sum(tensorflow.multiply(y_true, 1 - y_pred), axis=-1)
     return loss + penalty_factor * incorrect_penalty
 
@@ -276,7 +276,7 @@ def getBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
     X_HL = X_HL.reshape((totalBatchSize, height, width, 1))
     X_HH = X_HH.reshape((totalBatchSize, height, width, 1))
     
-    return X_LL.astype(np.float32), X_LH.astype(np.float32), X_HL.astype(np.float32), X_HH.astype(np.float32), Y
+    return X_LL, X_LH, X_HL, X_HH, Y
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1', 'True'):
