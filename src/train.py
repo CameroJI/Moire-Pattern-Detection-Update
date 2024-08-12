@@ -16,7 +16,15 @@ from keras.utils import to_categorical # type: ignore
 from keras.callbacks import ModelCheckpoint # type: ignore
 
 optimizer = keras.optimizers.Adam(learning_rate=1e-3)
-loss_fn = keras.losses.CategoricalCrossentropy(from_logits=False)
+
+def custom_loss(y_true, y_pred):
+    # Penaliza más las predicciones incorrectas
+    loss = tensorflow.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=False)
+    penalty_factor = 2.0
+    incorrect_penalty = tensorflow.reduce_sum(tensorflow.multiply(y_true, 1 - y_pred), axis=-1)
+    return loss + penalty_factor * incorrect_penalty
+
+loss_fn = custom_loss
 train_acc_metric = keras.metrics.CategoricalAccuracy()
 val_acc_metric = keras.metrics.CategoricalAccuracy()
 
@@ -50,9 +58,9 @@ def main(args):
         
     model = createModel(height=height, width=width, depth=1, num_classes=numClasses)
     
-    model.compile(loss='categorical_crossentropy', # using the cross-entropy loss function
-        optimizer='adam', # using the Adam optimizer
-        metrics=['accuracy']) # reporting the accuracy 
+    model.compile(loss=custom_loss, # Usa la función de pérdida personalizada
+                  optimizer='adam',
+                  metrics=['accuracy'])
 
     if loadCheckPoint:
         model.load_weights(checkpoint_path)
