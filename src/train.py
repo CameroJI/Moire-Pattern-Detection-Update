@@ -18,10 +18,17 @@ from keras.callbacks import ModelCheckpoint # type: ignore
 optimizer = keras.optimizers.Adam(learning_rate=1e-3)
 
 def custom_loss(y_true, y_pred):
-    # Penaliza más las predicciones incorrectas
+    # Asegúrate de que ambos tensores sean del mismo tipo
+    # y_true = tensorflow.cast(y_true, tensorflow.float32)
+    # y_pred = tensorflow.cast(y_pred, tensorflow.float32)
+    
+    # Calcula la pérdida estándar
     loss = tensorflow.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=False)
+    
+    # Penaliza más las predicciones incorrectas
     penalty_factor = 2.5
     incorrect_penalty = tensorflow.reduce_sum(tensorflow.multiply(y_true, 1 - y_pred), axis=-1)
+    
     return loss + penalty_factor * incorrect_penalty
 
 loss_fn = custom_loss
@@ -240,6 +247,7 @@ def createElements(batch_size, height, width, multiply):
     X_index = np.zeros((totalBatchSize, 1))
     Y = np.zeros((totalBatchSize, 1))
     
+    #return X_LL.astype(np.float32), X_LH.astype(np.float32), X_HL.astype(np.float32), X_HH.astype(np.float32), Y
     return X_LL, X_LH, X_HL, X_HH, X_index, Y, totalBatchSize
 
 def defineEpochRange(epoch, batch_size, n):
