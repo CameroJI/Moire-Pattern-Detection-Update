@@ -16,22 +16,7 @@ from keras.utils import to_categorical # type: ignore
 from keras.callbacks import ModelCheckpoint # type: ignore
 
 optimizer = keras.optimizers.Adam(learning_rate=1e-3)
-
-def custom_loss(y_true, y_pred):
-    # Asegúrate de que ambos tensores sean del mismo tipo
-    # y_true = tensorflow.cast(y_true, tensorflow.float32)
-    # y_pred = tensorflow.cast(y_pred, tensorflow.float32)
-    
-    # Calcula la pérdida estándar
-    loss = tensorflow.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=False)
-    
-    # Penaliza más las predicciones incorrectas
-    penalty_factor = 2.5
-    incorrect_penalty = tensorflow.reduce_sum(tensorflow.multiply(y_true, 1 - y_pred), axis=-1)
-    
-    return loss + penalty_factor * incorrect_penalty
-
-loss_fn = custom_loss
+loss_fn = keras.losses.CategoricalCrossentropy(from_logits=False)
 train_acc_metric = keras.metrics.CategoricalAccuracy()
 val_acc_metric = keras.metrics.CategoricalAccuracy()
 
@@ -65,9 +50,9 @@ def main(args):
         
     model = createModel(height=height, width=width, depth=1, num_classes=numClasses)
     
-    model.compile(loss=custom_loss, # Usa la función de pérdida personalizada
-                  optimizer='adam',
-                  metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', # using the cross-entropy loss function
+        optimizer='adam', # using the Adam optimizer
+        metrics=['accuracy']) # reporting the accuracy 
 
     if loadCheckPoint:
         model.load_weights(checkpoint_path)
@@ -247,7 +232,6 @@ def createElements(batch_size, height, width, multiply):
     X_index = np.zeros((totalBatchSize, 1))
     Y = np.zeros((totalBatchSize, 1))
     
-    #return X_LL.astype(np.float32), X_LH.astype(np.float32), X_HL.astype(np.float32), X_HH.astype(np.float32), Y
     return X_LL, X_LH, X_HL, X_HH, X_index, Y, totalBatchSize
 
 def defineEpochRange(epoch, batch_size, n):
@@ -284,7 +268,7 @@ def getBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
     X_HL = X_HL.reshape((totalBatchSize, height, width, 1))
     X_HH = X_HH.reshape((totalBatchSize, height, width, 1))
     
-    return X_LL, X_LH, X_HL, X_HH, Y
+    return X_LL.astype(np.float32), X_LH.astype(np.float32), X_HL.astype(np.float32), X_HH.astype(np.float32), Y
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1', 'True'):
