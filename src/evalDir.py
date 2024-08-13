@@ -39,7 +39,7 @@ def evaluateFolders(model, root, height, width):
                 i+=1
             print('---------------------------------------------------------------------')
             print(f'{file}',end='\t')
-            print(f'Score: {score}\tOcurrences: {ocurrences}\tPrediction: {prediction}\t\n')
+            print(f'Score: {score}\tOcurrences: {ocurrences}\tPrediction: {prediction}\t{idx}/{len(listdir(root))}\n')
     except:
         print(f'Archivo: {file} no se pudo procesar.')
         
