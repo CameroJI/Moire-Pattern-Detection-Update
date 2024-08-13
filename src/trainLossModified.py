@@ -95,10 +95,10 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
         imgHH = Image.open(join(trainImagePath, fHH))
         
         # DATA AUGMENTATION FOR TRAINING
-        imgLL = apply_augmentation(imgLL)
-        imgLH = apply_augmentation(imgLH)
-        imgHL = apply_augmentation(imgHL)
-        imgHH = apply_augmentation(imgHH)
+        # imgLL = apply_augmentation(imgLL)
+        # imgLH = apply_augmentation(imgLH)
+        # imgHL = apply_augmentation(imgHL)
+        # imgHH = apply_augmentation(imgHH)
         
         imgLL = imgLL.resize((width, height))
         imgLH = imgLH.resize((width, height))

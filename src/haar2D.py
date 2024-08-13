@@ -8,9 +8,9 @@ from skimage.filters import gabor
 def fwdHaarDWT2D(img):
     coeffs2 = pywt.dwt2(img, 'bior1.3')
     LL, (HL, LH, HH) = coeffs2
-    LL = gaborFilter(img)
+    gaborImg = gaborFilter(img)
     
-    return LL, LH, HL, HH
+    return gaborImg, LH, HL, HH
 
 def gaborFilter(img, frequency=0.56, theta=pi/2):
     filt_real, filt_imag = gabor(np.array(img, dtype=np.float32), frequency=frequency, theta=theta)
