@@ -27,6 +27,8 @@ def main(args):
 def evaluateFolders(model, root, height, width):
     try:
         i = 0
+        warningsCnt = 0
+        failCnt = 0
         for idx, file in enumerate(listdir(root)):
             img = Image.open(join(root, file))
             
@@ -35,15 +37,22 @@ def evaluateFolders(model, root, height, width):
             X_LL, X_LH, X_HL, X_HH, Y = getEvaluationBatch(img, height, width)
             score, ocurrences, prediction = evaluate(model, X_LL, X_LH, X_HL, X_HH, Y)
             # createJson(jsonWrite, basename(root), basename(dirPath), first, score, ocurrences, prediction)
+            if prediction == 'WARNING':
+                warningsCnt+=1
+            if prediction == 'FAIL':
+                failCnt+=1
             if prediction == 'WARNING' or prediction == 'FAIL':
                 i+=1
             print('---------------------------------------------------------------------')
             print(f'{file}',end='\t')
-            print(f'Score: {score}\tOcurrences: {ocurrences}\tPrediction: {prediction}\t{idx}/{len(listdir(root))}\n')
+            print(f'Score: {score}\tOcurrences: {ocurrences}\tPrediction: {prediction}\t{idx+1}/{len(listdir(root))}\n')
     except:
         print(f'Archivo: {file} no se pudo procesar.')
         
-    print(f'Total de Ataques detectados: {i}/{len(listdir(root))}')
+    print(f'Total de Ataques detectados: {failCnt}/{len(listdir(root))}')
+    print(f'Total de Warning detectados: {warningsCnt}/{len(listdir(root))}')
+    
+    print(f'Total detectados: {i}/{len(listdir(root))}')
     
 def createJson(path, basename, dirPath, n, score, ocurrences, prediction):
     results = {
