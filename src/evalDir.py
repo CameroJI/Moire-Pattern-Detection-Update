@@ -5,6 +5,8 @@ import tensorflow as tf
 from os import listdir
 from os.path import join, basename
 import numpy as np
+from math import pi
+from skimage.filters import gabor
 from sklearn import preprocessing
 from PIL import Image
 import pywt
@@ -24,6 +26,7 @@ def main(args):
             
 def evaluateFolders(model, root, height, width):
     try:
+        i = 0
         for idx, file in enumerate(listdir(root)):
             img = Image.open(join(root, file))
             
@@ -32,11 +35,15 @@ def evaluateFolders(model, root, height, width):
             X_LL, X_LH, X_HL, X_HH, Y = getEvaluationBatch(img, height, width)
             score, ocurrences, prediction = evaluate(model, X_LL, X_LH, X_HL, X_HH, Y)
             # createJson(jsonWrite, basename(root), basename(dirPath), first, score, ocurrences, prediction)
+            if prediction == 'WARNING' or prediction == 'FAIL':
+                i+=1
             print('---------------------------------------------------------------------')
             print(f'{file}',end='\t')
-            print(f'Score: {score}\tOcurrences: {ocurrences}\tPrediction: {prediction}\n')
+            print(f'Score: {score}\tOcurrences: {ocurrences}\tPrediction: {prediction}\t\n')
     except:
-        print(f'Archivo: {file} no se pudo procesar.')  
+        print(f'Archivo: {file} no se pudo procesar.')
+        
+    print(f'Total de Ataques detectados: {i}/{len(listdir(root))}')
     
 def createJson(path, basename, dirPath, n, score, ocurrences, prediction):
     results = {
@@ -70,7 +77,7 @@ def evaluate(model, X_LL_test,X_LH_test,X_HL_test,X_HH_test,y_test):
     if TN == 0:
         str_label = 'PASS'
         
-    elif TN > 0 and TN < 3:
+    elif TN > 0 and TN < 2:
         str_label = 'WARNING'
         
     else:
@@ -123,8 +130,17 @@ def scaleData(inp, minimum, maximum):
 def fwdHaarDWT2D(img):
     coeffs2 = pywt.dwt2(img, 'bior1.3')
     LL, (HL, LH, HH) = coeffs2
+    gaborImg = gaborFilter(img)
     
     return LL, LH, HL, HH
+
+def gaborFilter(img, frequency=0.56, theta=pi/2):
+    filt_real, filt_imag = gabor(np.array(img, dtype=np.float32), frequency=frequency, theta=theta)
+    
+    magnitude = np.sqrt(filt_real**2 + filt_imag**2)
+    magnitude = (magnitude - np.min(magnitude)) / (np.max(magnitude) - np.min(magnitude)) * 255
+    
+    return magnitude
 
 def createElements(batch_size, height, width, multiply):
     totalBatchSize = batch_size*multiply
