@@ -32,7 +32,7 @@ def evaluateFolders(model, root, height, width):
         for idx, file in enumerate(listdir(root)):
             img = Image.open(join(root, file))
             
-            jsonWrite = join(root, f'{file}_jsonPredict.son')
+            jsonWrite = join(root, f'{file}_jsonPredict.json')
             
             X_LL, X_LH, X_HL, X_HH, Y = getEvaluationBatch(img, height, width)
             score, ocurrences, prediction = evaluate(model, X_LL, X_LH, X_HL, X_HH, Y)
