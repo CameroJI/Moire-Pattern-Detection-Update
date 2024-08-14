@@ -86,7 +86,7 @@ def evaluate(model, X_LL_test,X_LH_test,X_HL_test,X_HH_test,y_test):
     if TN == 0:
         str_label = 'PASS'
         
-    elif TN > 0 and TN < 2:
+    elif TN == 1:
         str_label = 'WARNING'
         
     else:
