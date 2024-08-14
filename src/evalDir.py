@@ -53,7 +53,7 @@ def evaluateFolders(model, root, height, width):
     print(f'Total de Warning detectados: {warningsCnt}/{len(listdir(root))}')
     
     print(f'Total detectados: {i}/{len(listdir(root))}')
-    
+        
 def createJson(path, basename, dirPath, n, score, ocurrences, prediction):
     results = {
         "root": {
