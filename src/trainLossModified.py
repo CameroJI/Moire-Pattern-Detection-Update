@@ -35,27 +35,30 @@ val_acc_metric = keras.metrics.CategoricalAccuracy()
 penalty_factor = 2.5
 
 def main(args):
-    global penalty_factor
-    positiveImagePath = (args.positiveImages)
-    negativeImagePath = (args.negativeImages)
+    global penalty_factor, optimizer
+    positiveImagePath = args.positiveImages
+    negativeImagePath = args.negativeImages
     
     positiveDataImagePath = args.trainingDataPositive
     negativeDataImagePath = args.trainingDataNegative
     
-    numEpochs = (args.epochs)
-    save_epoch = (args.save_epoch)
-    init_epoch = (args.init_epoch)
-    save_iter = (args.save_iter)
+    numEpochs = args.epochs
+    save_epoch = args.save_epoch
+    init_epoch = args.init_epoch
+    save_iter = args.save_iter
     
-    batch_size = (args.batch_size)
+    batch_size = args.batch_size
     
-    checkpointPath = (args.checkpointPath)
-    loadCheckPoint = (args.loadCheckPoint)
+    checkpointPath = args.checkpointPath
+    loadCheckPoint = args.loadCheckPoint
     
-    height = (args.height)
-    width = (args.width)
+    height = args.height
+    width = args.width
     
-    penalty_factor = (args.penalty_factor)
+    penalty_factor = args.penalty_factor
+    learning_rate = args.learning_rate
+    
+    optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
         
     trainIndex, numClasses = createIndex(positiveImagePath, negativeImagePath)
 
@@ -353,10 +356,11 @@ def parse_arguments(argv):
     parser.add_argument('--batch_size', type=int, help='Batch size for epoch in training', default=32)
     parser.add_argument('--height', type=int, help='Image height resize', default=800)
     parser.add_argument('--width', type=int, help='Image width resize', default=1400)
+    
     parser.add_argument('--penalty_factor', type=float, help='Penalty to False Positives predictions', default=2.5)
+    parser.add_argument('--learning_rate', type=float, help='Model learning rate for iteration', default=1e-3)
     
     parser.add_argument('--loadCheckPoint', type=str2bool, help='Enable Checkpoint Load', default='True')
-    parser.add_argument('--quantization', type=str2bool, help='Enable Checkpoint Load', default='False')
     
     return parser.parse_args(argv)
 
