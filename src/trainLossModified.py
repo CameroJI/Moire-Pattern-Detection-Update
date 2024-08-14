@@ -150,7 +150,7 @@ def apply_augmentation(image):
     image_tf = tf.expand_dims(image_tf, axis=-1)  # Add channel dimension
     
     # Apply brightness and contrast adjustments
-    image_tf = tf.image.random_brightness(image_tf, max_delta=0.1)
+    image_tf = tf.image.random_brightness(image_tf, max_delta=0.15)
     image_tf = tf.image.random_contrast(image_tf, lower=0.9, upper=1.1)
     
     # Remove channel dimension and convert back to uint8
