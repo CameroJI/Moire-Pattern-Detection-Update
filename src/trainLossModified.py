@@ -68,15 +68,16 @@ def main(args):
     if not exists(checkpointPath):
         makedirs(checkpointPath)
     
+    model = createModel(height=height, width=width, depth=1, num_classes=numClasses)
+
     if loadCheckPoint:
         model.load_weights(checkpoint_path)
-    else:
-        model = createModel(height=height, width=width, depth=1, num_classes=numClasses)
-    
+
     model.compile(
-                loss=custom_loss,
-                optimizer='adam',
-                metrics=['accuracy'])
+        loss=custom_loss,
+        optimizer='adam',
+        metrics=['accuracy']
+)
     
     epoch = epochFileValidation(epochFilePath, loadCheckPoint, init_epoch)
     
