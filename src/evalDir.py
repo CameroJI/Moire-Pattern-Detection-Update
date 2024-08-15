@@ -4,15 +4,12 @@ import argparse
 import tensorflow as tf
 from os import listdir
 from os.path import join, basename
-import numpy as np
 from math import pi
-from skimage.filters import gabor
+from haar2D import fwdHaarDWT2D
+import numpy as np
 from sklearn import preprocessing
 from PIL import Image
-import pywt
-import pywt.data
 import io
-import json
 
 def main(args):
     weights_file = args.weightsFile
@@ -25,18 +22,17 @@ def main(args):
     evaluateFolders(model, rootPath, height, width)
             
 def evaluateFolders(model, root, height, width):
-    try:
-        i = 0
-        warningsCnt = 0
-        failCnt = 0
-        for idx, file in enumerate(listdir(root)):
-            img = Image.open(join(root, file))
-            
-            jsonWrite = join(root, f'{file}_jsonPredict.json')
+    i = 0
+    warningsCnt = 0
+    failCnt = 0
+    imgTotal = len(listdir(root))
+    for idx, imgPath in enumerate(listdir(root)):
+        try:
+            img = Image.open(join(root, imgPath))
             
             X_LL, X_LH, X_HL, X_HH, Y = getEvaluationBatch(img, height, width)
             score, ocurrences, prediction = evaluate(model, X_LL, X_LH, X_HL, X_HH, Y)
-            # createJson(jsonWrite, basename(root), basename(dirPath), first, score, ocurrences, prediction)
+
             if prediction == 'WARNING':
                 warningsCnt+=1
             if prediction == 'FAIL':
@@ -44,33 +40,18 @@ def evaluateFolders(model, root, height, width):
             if prediction == 'WARNING' or prediction == 'FAIL':
                 i+=1
             print('---------------------------------------------------------------------')
-            print(f'{file}',end='\t')
+            print(f'{imgPath}',end='\t')
             print(f'Score: {score}\tOcurrences: {ocurrences}\tPrediction: {prediction}\t{idx+1}/{len(listdir(root))}\n')
-    except:
-        print(f'Archivo: {file} no se pudo procesar.')
         
-    print(f'Total de Ataques detectados: {failCnt}/{len(listdir(root))}')
-    print(f'Total de Warning detectados: {warningsCnt}/{len(listdir(root))}')
-    
-    print(f'Total detectados: {i}/{len(listdir(root))}')
+        except:
+            print(f'Archivo: {imgPath} no se pudo procesar.')
+            imgTotal -= 1
         
-def createJson(path, basename, dirPath, n, score, ocurrences, prediction):
-    results = {
-        "root": {
-            "rootFolder": basename,
-            "dir": dirPath,
-            "imageNumber":  n
-        },
-        "results": {
-            "score": score,
-            "ocurrences": ocurrences,
-            "prediction": prediction
-        }
-    }
-    print(results['results'])
+    print(f'Total de Ataques detectados: {failCnt}/{imgTotal}')
+    print(f'Total de Warning detectados: {warningsCnt}/{imgTotal}')
     
-    with open(path, 'w') as json_file:
-        json.dump(results, json_file, indent=4) 
+    print(f'Total detectados: {i}/{imgTotal}')    
+    
         
 def evaluate(model, X_LL_test,X_LH_test,X_HL_test,X_HH_test,y_test):
     model_out = model([X_LL_test, X_LH_test, X_HL_test, X_HH_test], training=False)
@@ -136,21 +117,6 @@ def scaleData(inp, minimum, maximum):
     
     return inp
 
-def fwdHaarDWT2D(img):
-    coeffs2 = pywt.dwt2(img, 'bior1.3')
-    LL, (HL, LH, HH) = coeffs2
-    gaborImg = gaborFilter(img)
-    
-    return LL, LH, HL, HH
-
-def gaborFilter(img, frequency=0.56, theta=pi/2):
-    filt_real, filt_imag = gabor(np.array(img, dtype=np.float32), frequency=frequency, theta=theta)
-    
-    magnitude = np.sqrt(filt_real**2 + filt_imag**2)
-    magnitude = (magnitude - np.min(magnitude)) / (np.max(magnitude) - np.min(magnitude)) * 255
-    
-    return magnitude
-
 def createElements(batch_size, height, width, multiply):
     totalBatchSize = batch_size*multiply
     X_LL = np.zeros((totalBatchSize, width*height))
@@ -162,7 +128,13 @@ def createElements(batch_size, height, width, multiply):
     
     return X_LL, X_LH, X_HL, X_HH, X_index, Y, totalBatchSize
 
-def transformImage(imgLL, imgLH, imgHL, imgHH, X_LL, X_LH, X_HL, X_HH, X_index, sampleIndex, height, width):    
+def transformImage(imgLL, imgLH, imgHL, imgHH, X_LL, X_LH, X_HL, X_HH, X_index, sampleIndex, height, width):   
+    
+    imgLL = evalAugmentation(imgLL)
+    imgLH = evalAugmentation(imgLH)
+    imgHL = evalAugmentation(imgHL)
+    imgHH = evalAugmentation(imgHH)
+     
     imgLL = np.array(imgLL)
     imgLH = np.array(imgLH)
     imgHL = np.array(imgHL)
@@ -212,6 +184,23 @@ def imageTransformation(img, height, width):
     cD = Image.open(getTiffFromJpg(cD))
             
     return cA, cH, cV, cD
+
+def evalAugmentation(img):
+    image_np = np.array(img)
+    
+    if len(image_np.shape) != 2:
+        raise ValueError("The input image must be a 2-D grayscale image.")
+    
+    image_tf = tf.convert_to_tensor(image_np, dtype=tf.float32)
+    image_tf = tf.expand_dims(image_tf, axis=-1)
+    
+    image_tf = tf.squeeze(image_tf, axis=-1)
+    image_tf = tf.clip_by_value(image_tf, 0, 255)
+    image_tf = tf.cast(image_tf, dtype=tf.uint8)
+    
+    image_prepared = Image.fromarray(image_tf.numpy())
+    
+    return image_prepared
 
 def getTiffFromJpg(img):
     tiff_bytes_io = io.BytesIO()
