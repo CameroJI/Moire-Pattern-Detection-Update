@@ -93,21 +93,16 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
     fHH = (f.replace(fileName, fileName + customStr + '_HH')).replace('.jpg','.tiff')
     
     try:
-        imgLL = Image.open(join(trainImagePath, fLL))
-        imgLH = Image.open(join(trainImagePath, fLH))
-        imgHL = Image.open(join(trainImagePath, fHL))
-        imgHH = Image.open(join(trainImagePath, fHH))
+        imgLL = PreprocessImage(join(trainImagePath, fLL), width, height)
+        imgLL = PreprocessImage(join(trainImagePath, fLH), width, height)
+        imgLL = PreprocessImage(join(trainImagePath, fHL), width, height)
+        imgLL = PreprocessImage(join(trainImagePath, fHH), width, height)
         
         # DATA AUGMENTATION FOR TRAINING
         imgLL = apply_augmentation(imgLL)
         imgLH = apply_augmentation(imgLH)
         imgHL = apply_augmentation(imgHL)
         imgHH = apply_augmentation(imgHH)
-        
-        imgLL = imgLL.resize((width, height))
-        imgLH = imgLH.resize((width, height))
-        imgHL = imgHL.resize((width, height))
-        imgHH = imgHH.resize((width, height))
         
     except Exception as e:
         print(f"Error: Couldn\'t read the file {fileName}. Make sure only images are present in the folder")
@@ -137,32 +132,56 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
 
     return True
 
-import tensorflow as tf
-import numpy as np
-from PIL import Image
+def PreprocessImage(imgPath, width, height):
+    img = Image.open(imgPath)
+    w, h = img.size
+    
+    if w < width or h < height:
+        proportion = min(width / w, height / h)
+        new_width = int(w * proportion)
+        new_height = int(h * proportion)
+        
+        img = img.resize((new_width, new_height), Image.LANCZOS)
+        
+        left = (new_width - width) / 2
+        top = (new_height - height) / 2
+        right = (new_width + width) / 2
+        bottom = (new_height + height) / 2
+        
+        img = img.crop((left, top, right, bottom))
+    
+    else:
+        proportion = max(width / w, height / h)
+        new_width = int(w * proportion)
+        new_height = int(h * proportion)
+        
+        img = img.resize((new_width, new_height), Image.LANCZOS)
+        
+        left = (new_width - width) / 2
+        top = (new_height - height) / 2
+        right = (new_width + width) / 2
+        bottom = (new_height + height) / 2
+        
+        img = img.crop((left, top, right, bottom))
+    
+    return img
 
 def apply_augmentation(image):
-    # Convert PIL image to numpy array
     image_np = np.array(image)
     
-    # Ensure the image is in 2-D grayscale format
     if len(image_np.shape) != 2:
         raise ValueError("The input image must be a 2-D grayscale image.")
     
-    # Convert to a TensorFlow tensor and add a batch dimension
     image_tf = tf.convert_to_tensor(image_np, dtype=tf.float32)
-    image_tf = tf.expand_dims(image_tf, axis=-1)  # Add channel dimension
+    image_tf = tf.expand_dims(image_tf, axis=-1)
     
-    # Apply brightness and contrast adjustments
     image_tf = tf.image.random_brightness(image_tf, max_delta=0.15)
     image_tf = tf.image.random_contrast(image_tf, lower=0.9, upper=1.1)
     
-    # Remove channel dimension and convert back to uint8
-    image_tf = tf.squeeze(image_tf, axis=-1)  # Remove channel dimension
-    image_tf = tf.clip_by_value(image_tf, 0, 255)  # Clip values to valid range
+    image_tf = tf.squeeze(image_tf, axis=-1)
+    image_tf = tf.clip_by_value(image_tf, 0, 255)
     image_tf = tf.cast(image_tf, dtype=tf.uint8)
     
-    # Convert back to a PIL image
     image_augmented = Image.fromarray(image_tf.numpy())
     
     return image_augmented

@@ -46,13 +46,11 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
     global width, height
 
     try:
-        img = Image.open(join(mainFolder, f))
+        img = PreprocessImage(join(mainFolder, f), width, height)
     except Exception:
         print(f'Error: couldn\'t read the file {f}. Make sure only images are present in the folder')
         return None
 
-    w, h = img.size
-    img = img.resize((height, width)) if h > w else img.resize((width, height))
     imgGray = img.convert('L')
     wdChk, htChk = imgGray.size
     if htChk > wdChk:
@@ -66,6 +64,40 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
     transformImageAndSave(imgGray, f, '180_FLIP_', trainFolder)
 
     return True
+
+def PreprocessImage(imgPath, width, height):
+    img = Image.open(imgPath)
+    w, h = img.size
+    
+    if w < width or h < height:
+        proportion = min(width / w, height / h)
+        new_width = int(w * proportion)
+        new_height = int(h * proportion)
+        
+        img = img.resize((new_width, new_height), Image.LANCZOS)
+        
+        left = (new_width - width) / 2
+        top = (new_height - height) / 2
+        right = (new_width + width) / 2
+        bottom = (new_height + height) / 2
+        
+        img = img.crop((left, top, right, bottom))
+    
+    else:
+        proportion = max(width / w, height / h)
+        new_width = int(w * proportion)
+        new_height = int(h * proportion)
+        
+        img = img.resize((new_width, new_height), Image.LANCZOS)
+        
+        left = (new_width - width) / 2
+        top = (new_height - height) / 2
+        right = (new_width + width) / 2
+        bottom = (new_height + height) / 2
+        
+        img = img.crop((left, top, right, bottom))
+    
+    return img
 
 def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputPositiveImagePath, outputNegativeImagePath):
     # get image files by classes

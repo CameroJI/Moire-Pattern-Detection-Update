@@ -28,9 +28,9 @@ def evaluateFolders(model, root, height, width):
     imgTotal = len(listdir(root))
     for idx, imgPath in enumerate(listdir(root)):
         try:
-            img = Image.open(join(root, imgPath))
+            path = join(root, imgPath)
             
-            X_LL, X_LH, X_HL, X_HH, Y = getEvaluationBatch(img, height, width)
+            X_LL, X_LH, X_HL, X_HH, Y = getEvaluationBatch(path, height, width)
             score, ocurrences, prediction = evaluate(model, X_LL, X_LH, X_HL, X_HH, Y)
 
             if prediction == 'WARNING':
@@ -78,14 +78,10 @@ def evaluate(model, X_LL_test,X_LH_test,X_HL_test,X_HH_test,y_test):
 
     return precision, ocurrences, str_label
         
-def getEvaluationBatch(img, height, width):
+def getEvaluationBatch(imgPath, height, width):
     X_LL, X_LH, X_HL, X_HH, X_index, Y, totalBatchSize = createElements(1, height, width, 3)
 
-    w, h = img.size
-    if h > w:
-        img = img.resize((height, width))
-    else:
-        img = img.resize((width, height))
+    img = PreprocessImage(imgPath, height, width)
 
     imgGray1 = img.convert('L')
     wdChk, htChk = imgGray1.size
@@ -109,6 +105,40 @@ def getEvaluationBatch(img, height, width):
     X_HH = X_HH.reshape((totalBatchSize, height, width, 1))
 
     return X_LL, X_LH, X_HL, X_HH, Y
+
+def PreprocessImage(imgPath, width, height):
+    img = Image.open(imgPath)
+    w, h = img.size
+    
+    if w < width or h < height:
+        proportion = min(width / w, height / h)
+        new_width = int(w * proportion)
+        new_height = int(h * proportion)
+        
+        img = img.resize((new_width, new_height), Image.LANCZOS)
+        
+        left = (new_width - width) / 2
+        top = (new_height - height) / 2
+        right = (new_width + width) / 2
+        bottom = (new_height + height) / 2
+        
+        img = img.crop((left, top, right, bottom))
+    
+    else:
+        proportion = max(width / w, height / h)
+        new_width = int(w * proportion)
+        new_height = int(h * proportion)
+        
+        img = img.resize((new_width, new_height), Image.LANCZOS)
+        
+        left = (new_width - width) / 2
+        top = (new_height - height) / 2
+        right = (new_width + width) / 2
+        bottom = (new_height + height) / 2
+        
+        img = img.crop((left, top, right, bottom))
+    
+    return img
 
 def scaleData(inp, minimum, maximum):
     minMaxScaler = preprocessing.MinMaxScaler(copy=True, feature_range=(minimum,maximum))
