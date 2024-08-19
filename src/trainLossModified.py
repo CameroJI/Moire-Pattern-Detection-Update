@@ -150,7 +150,7 @@ def PreprocessImage(imgPath, width, height):
         
         img = img.crop((left, top, right, bottom))
     
-    else:
+    elif  w > width or h > height:
         proportion = max(width / w, height / h)
         new_width = int(w * proportion)
         new_height = int(h * proportion)
@@ -164,7 +164,7 @@ def PreprocessImage(imgPath, width, height):
         
         img = img.crop((left, top, right, bottom))
     
-    return img
+    return img.convert('L')
 
 def apply_augmentation(image):
     image_np = np.array(image)
