@@ -86,8 +86,8 @@ def main(args):
 
 def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_index, Y, sampleIndex, sampleVal, height, width):
     f = str(f)
-    fileName = (os.path.splitext(f)[0])
-    fLL = f"{splitext(f.replace(fileName, fileName + customStr + '_LL'))}.tiff"
+    fileName = splitext(f)[0]
+    fLL = f"{splitext(f.replace(fileName, fileName + customStr + '_LL'))[0]}.tiff"
     fLH = (f.replace(fileName, fileName + customStr + '_LH')).replace('.jpg','.tiff')
     fHL = (f.replace(fileName, fileName + customStr + '_HL')).replace('.jpg','.tiff')
     fHH = (f.replace(fileName, fileName + customStr + '_HH')).replace('.jpg','.tiff')
