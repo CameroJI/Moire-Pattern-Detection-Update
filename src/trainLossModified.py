@@ -94,9 +94,9 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
     
     try:
         imgLL = PreprocessImage(join(trainImagePath, fLL), width, height)
-        imgLL = PreprocessImage(join(trainImagePath, fLH), width, height)
-        imgLL = PreprocessImage(join(trainImagePath, fHL), width, height)
-        imgLL = PreprocessImage(join(trainImagePath, fHH), width, height)
+        imgLH = PreprocessImage(join(trainImagePath, fLH), width, height)
+        imgHL = PreprocessImage(join(trainImagePath, fHL), width, height)
+        imgHH = PreprocessImage(join(trainImagePath, fHH), width, height)
         
         # DATA AUGMENTATION FOR TRAINING
         # imgLL = apply_augmentation(imgLL)
