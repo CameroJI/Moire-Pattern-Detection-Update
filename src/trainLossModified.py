@@ -99,10 +99,10 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
         imgLL = PreprocessImage(join(trainImagePath, fHH), width, height)
         
         # DATA AUGMENTATION FOR TRAINING
-        imgLL = apply_augmentation(imgLL)
-        imgLH = apply_augmentation(imgLH)
-        imgHL = apply_augmentation(imgHL)
-        imgHH = apply_augmentation(imgHH)
+        # imgLL = apply_augmentation(imgLL)
+        # imgLH = apply_augmentation(imgLH)
+        # imgHL = apply_augmentation(imgHL)
+        # imgHH = apply_augmentation(imgHH)
         
     except Exception as e:
         print(f"Error: Couldn\'t read the file {fileName}. Make sure only images are present in the folder")
