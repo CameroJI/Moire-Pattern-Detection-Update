@@ -138,31 +138,20 @@ def PreprocessImage(imgPath, width, height):
     
     if w < width or h < height:
         proportion = min(width / w, height / h)
-        new_width = int(w * proportion)
-        new_height = int(h * proportion)
-        
-        img = img.resize((new_width, new_height), Image.LANCZOS)
-        
-        left = (new_width - width) / 2
-        top = (new_height - height) / 2
-        right = (new_width + width) / 2
-        bottom = (new_height + height) / 2
-        
-        img = img.crop((left, top, right, bottom))
-    
-    elif  w > width or h > height:
+    else:
         proportion = max(width / w, height / h)
-        new_width = int(w * proportion)
-        new_height = int(h * proportion)
-        
-        img = img.resize((new_width, new_height), Image.LANCZOS)
-        
-        left = (new_width - width) / 2
-        top = (new_height - height) / 2
-        right = (new_width + width) / 2
-        bottom = (new_height + height) / 2
-        
-        img = img.crop((left, top, right, bottom))
+    
+    new_width = int(w * proportion)
+    new_height = int(h * proportion)
+    
+    img = img.resize((new_width, new_height), Image.LANCZOS)
+    
+    left = (new_width - width) / 2
+    top = (new_height - height) / 2
+    right = (new_width + width) / 2
+    bottom = (new_height + height) / 2
+    
+    img = img.crop((left, top, right, bottom))
     
     return img.convert('L')
 
