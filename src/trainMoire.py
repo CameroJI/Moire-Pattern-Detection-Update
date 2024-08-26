@@ -332,10 +332,7 @@ def str2bool(v):
 
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
-    
-    parser.add_argument('--positiveImages', type=str, help='Directory with original positive (Moiré pattern) images.')
-    parser.add_argument('--negativeImages', type=str, help='Directory with original negative (Normal) images.')
-    
+        
     parser.add_argument('--trainingDataPositive', type=str, help='Directory with transformed positive (Moiré pattern) images.')
     parser.add_argument('--trainingDataNegative', type=str, help='Directory with transformed negative (Normal) images.')
     
