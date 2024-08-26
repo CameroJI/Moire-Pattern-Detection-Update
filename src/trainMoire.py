@@ -2,7 +2,6 @@ import numpy as np
 import sys
 import argparse
 from math import ceil
-import os
 import time
 from os import listdir, makedirs
 from os.path import join, exists, splitext
@@ -12,8 +11,6 @@ import random
 from mCNN import createModel
 import tensorflow as tf
 from tensorflow import keras
-from keras.utils import to_categorical # type: ignore
-from keras.callbacks import ModelCheckpoint # type: ignore
 
 def custom_loss(y_true, y_pred):
     y_true = tf.cast(y_true, tf.float32)
@@ -27,15 +24,13 @@ def custom_loss(y_true, y_pred):
 
 optimizer = keras.optimizers.Adam(learning_rate=1e-3)
 loss_fn = custom_loss
-train_acc_metric = keras.metrics.CategoricalAccuracy()
-val_acc_metric = keras.metrics.CategoricalAccuracy()
+train_acc_metric = keras.metrics.BinaryAccuracy()
+val_acc_metric = keras.metrics.BinaryAccuracy()
 
 penalty_factor = 2.5
 
 def main(args):
     global penalty_factor, optimizer
-    positiveImagePath = args.positiveImages
-    negativeImagePath = args.negativeImages
     
     positiveDataImagePath = args.trainingDataPositive
     negativeDataImagePath = args.trainingDataNegative
@@ -58,7 +53,7 @@ def main(args):
     
     optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
         
-    trainIndex = createIndex(positiveImagePath, negativeImagePath)
+    trainIndex = createIndex(positiveDataImagePath, negativeDataImagePath)
 
     epochFilePath = f"{checkpointPath}/epoch.txt"
     checkpoint_path = f"{checkpointPath}/cp.keras"
@@ -80,7 +75,7 @@ def main(args):
     epoch = epochFileValidation(epochFilePath, loadCheckPoint, init_epoch)
     
     model = trainModel(trainIndex, positiveDataImagePath, negativeDataImagePath, epoch, numEpochs, 
-        epochFilePath, save_epoch, save_iter, batch_size, numClasses, height, width, checkpoint_path, model)
+        epochFilePath, save_epoch, save_iter, batch_size, height, width, checkpoint_path, model)
 
 def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_index, Y, sampleIndex, sampleVal, height, width):
     f = str(f)
@@ -111,19 +106,11 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
     imgLH = np.array(imgLH)
     imgHL = np.array(imgHL)
     imgHH = np.array(imgHH)
-    imgLL = scaleData(imgLL, 0, 1)
-    imgLH = scaleData(imgLH, -1, 1)
-    imgHL = scaleData(imgHL, -1, 1)
-    imgHH = scaleData(imgHH, -1, 1)
 
-    imgVector = imgLL.reshape(1, width*height)
-    X_LL[sampleIndex, :] = imgVector
-    imgVector = imgLH.reshape(1, width*height)
-    X_LH[sampleIndex, :] = imgVector
-    imgVector = imgHL.reshape(1, width*height)
-    X_HL[sampleIndex, :] = imgVector
-    imgVector = imgHH.reshape(1, width*height)
-    X_HH[sampleIndex, :] = imgVector
+    X_LL[sampleIndex, :] = imgLL
+    X_LH[sampleIndex, :] = imgLH
+    X_HL[sampleIndex, :] = imgHL
+    X_HH[sampleIndex, :] = imgHH
     
     Y[sampleIndex, 0] = sampleVal
     X_index[sampleIndex, 0] = sampleIndex
@@ -181,8 +168,8 @@ def scaleData(inp, minimum, maximum):
     return inp
 
 def createIndex(posPath, negPath):
-    posList = list(listdir(posPath))
-    negList = list(listdir(negPath))
+    posList = readLstFile(posPath, 'positiveFiles.lst')
+    negList = readLstFile(negPath, 'negativeFiles.lst')
 
     datasetList = [(i, 1) for i in posList]
     datasetList.extend((i, 0) for i in negList)
@@ -190,6 +177,13 @@ def createIndex(posPath, negPath):
     random.shuffle(datasetList)
         
     return datasetList
+
+def readLstFile(path, filename):
+    listPath = join(path, filename)
+    with open(listPath, 'r') as file:
+        lines = file.readlines()
+
+    return lines
 
 def epochFileValidation(path, loadFlag, init_epoch):
     if not exists(path) or not loadFlag:
@@ -225,7 +219,7 @@ def train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train):
     
     return loss_value
         
-def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_epoch, save_iter, batch_size, numClasses, height, width, checkpoint_path, model):
+def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_epoch, save_iter, batch_size, height, width, checkpoint_path, model):
     epoch -= 1
     n = len(listInput)
     start_time_full = time.time()
@@ -236,7 +230,6 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
         for j in range(ceil(n/batch_size)):
             start, end = defineEpochRange(j, batch_size, n)            
             X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train = getBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
-            Y_train = to_categorical(Y_train, numClasses)
             
             loss = train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train)
             
@@ -288,15 +281,15 @@ def saveModel(model, checkpoint_path):
 
 def createElements(batch_size, height, width, multiply):
     totalBatchSize = batch_size*multiply
-    X_LL = np.zeros((totalBatchSize, width*height))
-    X_LH = np.zeros((totalBatchSize, width*height))
-    X_HL = np.zeros((totalBatchSize, width*height))
-    X_HH = np.zeros((totalBatchSize, width*height))
+    X_LL = np.zeros((totalBatchSize, height, width, 1))
+    X_LH = np.zeros((totalBatchSize, height, width, 1))
+    X_HL = np.zeros((totalBatchSize, height, width, 1))
+    X_HH = np.zeros((totalBatchSize, height, width, 1))
     X_index = np.zeros((totalBatchSize, 1))
     Y = np.zeros((totalBatchSize, 1))
     
     #return X_LL.astype(np.float32), X_LH.astype(np.float32), X_HL.astype(np.float32), X_HH.astype(np.float32), Y
-    return X_LL, X_LH, X_HL, X_HH, X_index, Y, totalBatchSize
+    return X_LL, X_LH, X_HL, X_HH, X_index, Y
 
 def defineEpochRange(epoch, batch_size, n):
     start = 0 if epoch*batch_size >= n else epoch*batch_size
@@ -305,7 +298,7 @@ def defineEpochRange(epoch, batch_size, n):
     return start, end
 
 def getBatch(listInput, posPath, negPath, start, end, batch_size, height, width):
-    X_LL, X_LH, X_HL, X_HH, X_index, Y, totalBatchSize= createElements(batch_size, height, width, 3)
+    X_LL, X_LH, X_HL, X_HH, X_index, Y = createElements(batch_size, height, width, 3)
 
     sampleIndex = 0
     for f in listInput[start:end]:
@@ -326,11 +319,6 @@ def getBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
         ret = readAndScaleImage(file, '_180_FLIP', path, X_LL, X_LH, X_HL, X_HH, X_index, Y, sampleIndex, y, height, width)
         if ret == True:
             sampleIndex += 1
-
-    X_LL = X_LL.reshape((totalBatchSize, height, width, 1))
-    X_LH = X_LH.reshape((totalBatchSize, height, width, 1))
-    X_HL = X_HL.reshape((totalBatchSize, height, width, 1))
-    X_HH = X_HH.reshape((totalBatchSize, height, width, 1))
     
     return X_LL, X_LH, X_HL, X_HH, Y
 
