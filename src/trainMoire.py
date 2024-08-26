@@ -10,7 +10,7 @@ import random
 from mCNN import createModel
 import tensorflow as tf
 from tensorflow import keras
-from keras.metrics import Precision, Recall
+from keras.metrics import Precision, Recall # type: ignore
 from sklearn.metrics import f1_score
 
 def custom_loss(y_true, y_pred):
@@ -75,8 +75,8 @@ def main(args):
     model.compile(
         loss=custom_loss,
         optimizer='adam',
-        metrics=['accuracy']
-)
+        metrics=['accuracy', 'precision', 'recall', 'f1_score']
+    )
     
     epoch = epochFileValidation(epochFilePath, loadCheckPoint, init_epoch)
     
