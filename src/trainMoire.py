@@ -19,10 +19,8 @@ def custom_loss(y_true, y_pred):
     y_true = tf.cast(y_true, tf.float32)
     y_pred = tf.cast(y_pred, tf.float32)
     
-    # Cálculo de la pérdida estándar
-    loss = tf.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=False)
+    loss = tf.keras.losses.binary_crossentropy(y_true, y_pred, from_logits=False)
     
-    # Penalización para falsos positivos cuando y_true es 0 y y_pred es 1
     false_positives = tf.reduce_sum((1 - y_true) * y_pred, axis=-1)
     
     return loss + penalty_factor * false_positives
@@ -60,7 +58,7 @@ def main(args):
     
     optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
         
-    trainIndex, numClasses = createIndex(positiveImagePath, negativeImagePath)
+    trainIndex = createIndex(positiveImagePath, negativeImagePath)
 
     epochFilePath = f"{checkpointPath}/epoch.txt"
     checkpoint_path = f"{checkpointPath}/cp.keras"
@@ -68,7 +66,7 @@ def main(args):
     if not exists(checkpointPath):
         makedirs(checkpointPath)
     
-    model = createModel(height=height, width=width, depth=1, num_classes=numClasses)
+    model = createModel(height=height, width=width, depth=1)
 
     if loadCheckPoint:
         model.load_weights(checkpoint_path)
@@ -190,10 +188,8 @@ def createIndex(posPath, negPath):
     datasetList.extend((i, 0) for i in negList)
 
     random.shuffle(datasetList)
-    
-    classes = len(np.unique(np.array([fila[1] for fila in datasetList])))
-    
-    return datasetList, classes
+        
+    return datasetList
 
 def epochFileValidation(path, loadFlag, init_epoch):
     if not exists(path) or not loadFlag:
