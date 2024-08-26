@@ -13,18 +13,27 @@ from tensorflow import keras
 from keras.metrics import Precision, Recall # type: ignore
 from sklearn.metrics import f1_score
 
-def custom_loss(y_true, y_pred):
+def custom_loss(y_true, y_pred, weight_pos=1.0, weight_neg=1.0, ssim_weight=0.1):
     y_true = tf.cast(y_true, tf.float32)
     y_pred = tf.cast(y_pred, tf.float32)
     
-    loss = tf.keras.losses.binary_crossentropy(y_true, y_pred, from_logits=False)
+    binary_loss = tf.keras.losses.binary_crossentropy(y_true, y_pred, from_logits=False)
     
     false_positives = tf.reduce_sum((1 - y_true) * y_pred, axis=-1)
+    true_negatives = tf.reduce_sum((1 - y_true) * (1 - y_pred), axis=-1)
     
-    return loss + penalty_factor * false_positives
+    weighted_binary_loss = binary_loss + weight_pos * false_positives - weight_neg * true_negatives
+    
+    y_true_resized = tf.image.resize(y_true, [tf.shape(y_pred)[1], tf.shape(y_pred)[2]])
+    ssim_value = tf.image.ssim(y_true_resized, y_pred, max_val=1.0)
+    
+    ssim_loss = 1 - ssim_value
+    
+    combined_loss = weighted_binary_loss + ssim_weight * ssim_loss
+    
+    return combined_loss
 
 optimizer = keras.optimizers.Adam(learning_rate=1e-3)
-loss_fn = custom_loss
 train_acc_metric = keras.metrics.BinaryAccuracy()
 val_acc_metric = keras.metrics.BinaryAccuracy()
 
@@ -33,10 +42,9 @@ train_recall_metric = Recall()
 val_precision_metric = Precision()
 val_recall_metric = Recall()
 
-penalty_factor = 2.5
 
 def main(args):
-    global penalty_factor, optimizer
+    global optimizer
     
     positiveDataImagePath = args.trainingDataPositive
     negativeDataImagePath = args.trainingDataNegative
@@ -54,7 +62,6 @@ def main(args):
     height = args.height
     width = args.width
     
-    penalty_factor = args.penalty_factor
     learning_rate = args.learning_rate
     
     optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
@@ -73,7 +80,7 @@ def main(args):
         model.load_weights(checkpoint_path)
 
     model.compile(
-        loss=custom_loss,
+        loss=lambda y_true, y_pred: custom_loss(y_true, y_pred, weight_pos=21.5, weight_neg=1.0, ssim_weight=0.1),
         optimizer='adam',
         metrics=['accuracy', 'precision', 'recall', 'f1_score']
     )
@@ -209,8 +216,8 @@ def saveEpochFile(epochFilePath, epoch):
 @tf.function
 def train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train):
     with tf.GradientTape() as tape:
-        logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=True)  # Logits for this minibatch
-        loss_value = tf.reduce_mean(loss_fn(Y_train, logits))
+        logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=True)
+        loss_value = tf.reduce_mean(custom_loss(Y_train, logits))
 
     grads = tape.gradient(loss_value, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights))
@@ -373,7 +380,6 @@ def parse_arguments(argv):
     parser.add_argument('--height', type=int, help='Image height resize', default=800)
     parser.add_argument('--width', type=int, help='Image width resize', default=1400)
     
-    parser.add_argument('--penalty_factor', type=float, help='Penalty to False Positives predictions', default=2.5)
     parser.add_argument('--learning_rate', type=float, help='Model learning rate for iteration', default=1e-3)
     
     parser.add_argument('--loadCheckPoint', type=str2bool, help='Enable Checkpoint Load', default='True')
