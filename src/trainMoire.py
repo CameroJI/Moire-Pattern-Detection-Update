@@ -105,10 +105,10 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
         imgHH = PreprocessImage(join(trainImagePath, fHH), width, height)
         
         # DATA AUGMENTATION FOR TRAINING
-        imgLL = apply_augmentation(imgLL)
-        imgLH = apply_augmentation(imgLH)
-        imgHL = apply_augmentation(imgHL)
-        imgHH = apply_augmentation(imgHH)
+        imgLL = LL_Augmentation(imgLL)
+        imgLH = channelAugmentation(imgLH)
+        imgHL = channelAugmentation(imgHL)
+        imgHH = channelAugmentation(imgHH)
         
     except Exception as e:
         print(f"Error: Couldn\'t read the file {fileName}. Make sure only images are present in the folder")
@@ -153,8 +153,39 @@ def PreprocessImage(imgPath, width, height):
     
     return img.convert('L')
 
-def apply_augmentation(image):
+def LL_Augmentation(image):
     image_np = np.array(image)
+
+    if len(image_np.shape) != 2:
+        raise ValueError("The input image must be a 2-D grayscale image.")
+    
+    image_tf = tf.convert_to_tensor(image_np, dtype=tf.float32)
+    image_tf = tf.expand_dims(image_tf, axis=-1)  # Añade un canal de color
+    
+    # Aplicar aumentos
+    image_tf = tf.image.random_brightness(image_tf, max_delta=0.15)
+    image_tf = tf.image.random_contrast(image_tf, lower=0.9, upper=1.1)
+
+    image_pil = Image.fromarray(tf.squeeze(image_tf).numpy())
+    
+    angle = random.uniform(-20, 20)  # Ángulo entre -20 y 20 grados
+    image_pil = image_pil.rotate(angle, resample=Image.BICUBIC, expand=True)
+    
+    image_np = np.array(image_pil)
+    image_tf = tf.convert_to_tensor(image_np, dtype=tf.float32)
+    image_tf = tf.expand_dims(image_tf, axis=-1)
+    
+    image_tf = tf.clip_by_value(image_tf, 0, 255)
+    image_tf = tf.cast(image_tf, dtype=tf.uint8)
+    
+    image_tf = tf.squeeze(image_tf, axis=-1)
+    
+    image_augmented = Image.fromarray(image_tf.numpy())
+    
+    return image_augmented
+
+def channelAugmentation(img):
+    image_np = np.array(img)
     
     if len(image_np.shape) != 2:
         raise ValueError("The input image must be a 2-D grayscale image.")
@@ -162,16 +193,13 @@ def apply_augmentation(image):
     image_tf = tf.convert_to_tensor(image_np, dtype=tf.float32)
     image_tf = tf.expand_dims(image_tf, axis=-1)
     
-    image_tf = tf.image.random_brightness(image_tf, max_delta=0.15)
-    image_tf = tf.image.random_contrast(image_tf, lower=0.9, upper=1.1)
-    
     image_tf = tf.squeeze(image_tf, axis=-1)
     image_tf = tf.clip_by_value(image_tf, 0, 255)
     image_tf = tf.cast(image_tf, dtype=tf.uint8)
     
-    image_augmented = Image.fromarray(image_tf.numpy())
+    image_prepared = Image.fromarray(image_tf.numpy())
     
-    return image_augmented
+    return image_prepared
 
 def createIndex(posPath, negPath):
     posList = readLstFile(posPath, 'positiveFiles.lst')
