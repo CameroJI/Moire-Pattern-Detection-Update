@@ -1,12 +1,8 @@
-#The convolutional layer C1 filter three 512 x 384 input images with 32 kernels of size 7 x 7 with a stride of 1 pixel. The stride of pooling layer S1 is 2 pixels. Then, the convolved images of LH and HL are merged together by taking the maximum from both the images. In the next step, the convolved image of LL is merged with the Max result by multiplying both the results (as explained in section III-B). C2-C4 has 16 kernels of size 3 x 3 with a stride of 1 pixel. S2 pools the merged features with a stride of 4. The dropout is applied to the output of S4 which has been flattened. The fully connected layer FC1 has 32 neurons and FC2 has 1 neuron. The activation of the output layer is a softmax function.
-import os
-
 from keras.models import Model # type: ignore
 from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, Multiply, Maximum # type: ignore
-
 from keras import regularizers
 
-def createModel(height, width, depth, num_classes):
+def createModel(height, width, depth):
     kernel_size_small = 3
     kernel_size_large = 7
     pool_size = 2
@@ -54,6 +50,6 @@ def createModel(height, width, depth, num_classes):
     flat = Flatten()(drop_2)
     hidden = Dense(hidden_size, activation='relu', kernel_regularizer=regularizers.l2(0.01))(flat)
     drop_3 = Dropout(drop_prob_2)(hidden)
-    out = Dense(num_classes, activation='softmax')(drop_3)
+    out = Dense(1, activation='sigmoid')(drop_3)  # Capa de salida para clasificación binaria
 
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
