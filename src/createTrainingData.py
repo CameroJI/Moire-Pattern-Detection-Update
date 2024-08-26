@@ -1,7 +1,6 @@
 import sys
 import argparse
 from PIL import Image
-from PIL import ImageOps
 import os
 import time
 from os import listdir
@@ -99,6 +98,11 @@ def PreprocessImage(imgPath, width, height):
     
     return img
 
+def writelist(fileNames, outputFile):    
+    with open(outputFile, 'w') as file:
+        for idx, name in enumerate(fileNames):
+            file.write(f"{name}\n") if idx < len(fileNames) - 1 else file.write(f"{name}")
+
 def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputPositiveImagePath, outputNegativeImagePath):
     # get image files by classes
     positiveImageFiles = [f for f in listdir(origenPositiveImagePath) if isfile(join(origenPositiveImagePath, f))]
@@ -138,7 +142,10 @@ def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputP
             print(f"Transformed Negative Image {n + 1}/{negativeCount}")
             if ret is not None:
                 Knegative += 3
-
+    
+    writelist(positiveImageFiles, join(outputPositiveImagePath, 'positiveFiles.lst'))
+    writelist(negativeImageFiles, join(outputNegativeImagePath, 'negativeFiles.lst'))
+    
     print('Total positive files after augmentation: ', Kpositive)
     print('Total negative files after augmentation: ', Knegative)
 
