@@ -3,14 +3,15 @@ import sys
 import argparse
 from math import ceil
 import time
-from os import listdir, makedirs
+from os import makedirs
 from os.path import join, exists, splitext
 from PIL import Image
-from sklearn import preprocessing
 import random
 from mCNN import createModel
 import tensorflow as tf
 from tensorflow import keras
+from keras.metrics import Precision, Recall
+from sklearn.metrics import f1_score
 
 def custom_loss(y_true, y_pred):
     y_true = tf.cast(y_true, tf.float32)
@@ -26,6 +27,11 @@ optimizer = keras.optimizers.Adam(learning_rate=1e-3)
 loss_fn = custom_loss
 train_acc_metric = keras.metrics.BinaryAccuracy()
 val_acc_metric = keras.metrics.BinaryAccuracy()
+
+train_precision_metric = Precision()
+train_recall_metric = Recall()
+val_precision_metric = Precision()
+val_recall_metric = Recall()
 
 penalty_factor = 2.5
 
@@ -160,13 +166,6 @@ def apply_augmentation(image):
     
     return image_augmented
 
-def scaleData(inp, minimum, maximum):
-    minMaxScaler = preprocessing.MinMaxScaler(copy=True, feature_range=(minimum,maximum))
-    inp = inp.reshape(-1, 1)
-    inp = minMaxScaler.fit_transform(inp)
-    
-    return inp
-
 def createIndex(posPath, negPath):
     posList = readLstFile(posPath, 'positiveFiles.lst')
     negList = readLstFile(negPath, 'negativeFiles.lst')
@@ -215,10 +214,16 @@ def train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train):
 
     grads = tape.gradient(loss_value, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights))
+    
     train_acc_metric.update_state(Y_train, logits)
+    train_precision_metric.update_state(Y_train, logits)
+    train_recall_metric.update_state(Y_train, logits)
     
     return loss_value
         
+def f1Score(precision, recall):
+    return 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
+
 def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_epoch, save_iter, batch_size, height, width, checkpoint_path, model):
     epoch -= 1
     n = len(listInput)
@@ -237,22 +242,43 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
             print(f"Training {end - start} images ({j + 1}/{ceil(n/batch_size)})", end='\t')
             print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss: {loss*100:.2f}%')
             train_acc = train_acc_metric.result()
+            train_precision = train_precision_metric.result()
+            train_recall = train_recall_metric.result()
+            f1 = f1Score(train_precision, train_recall)
+            
             print(f'\nTraining acc over batch: {float(train_acc.numpy())*100:.2f}%')
+            print(f'Training precision over batch: {float(train_precision.numpy())*100:.2f}%')
+            print(f'Training recall over batch: {float(train_recall.numpy())*100:.2f}%')
+            print(f'F1-score over batch: {float(f1.numpy())*100:.2f}%')
 
-            # Reset training metrics at the end of each epoch
+            # Reset metrics at the end of each batch
             train_acc_metric.reset_state()
+            train_precision_metric.reset_state()
+            train_recall_metric.reset_state()
 
-            # Run a validation loop at the end of each epoch.
+            # Validación
             val_logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=False)
-            # Update val metrics
             val_acc_metric.update_state(Y_train, val_logits)
+            val_precision_metric.update_state(Y_train, val_logits)
+            val_recall_metric.update_state(Y_train, val_logits)
             val_acc = val_acc_metric.result()
+            val_precision = val_precision_metric.result()
+            val_recall = val_recall_metric.result()
+            val_f1 = f1Score(val_precision, val_recall)
+            
             print(f'Validation acc: {float(val_acc.numpy())*100:.2f}%')
+            print(f'Validation precision: {float(val_precision.numpy())*100:.2f}%')
+            print(f'Validation recall: {float(val_recall.numpy())*100:.2f}%')
+            print(f'Validation F1-score: {float(val_f1.numpy())*100:.2f}%')
+
+            # Reset validation metrics at the end of each batch
             val_acc_metric.reset_state()
+            val_precision_metric.reset_state()
+            val_recall_metric.reset_state()
             
             if save_iter != 0 and (j + 1) % save_iter == 0:
                 saveModel(model, checkpoint_path)
-        
+            
         end_time = time.time()
         elapsed_time = end_time - start_time
         minutes = elapsed_time // 60
