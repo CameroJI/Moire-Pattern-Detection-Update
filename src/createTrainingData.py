@@ -105,8 +105,8 @@ def writelist(fileNames, outputFile):
 
 def createTrainingData(origenPositiveImagePath, origenNegativeImagePath, outputPositiveImagePath, outputNegativeImagePath):
     # get image files by classes
-    positiveImageFiles = [f for f in listdir(origenPositiveImagePath) if isfile(join(origenPositiveImagePath, f))]
-    negativeImageFiles = [f for f in listdir(origenNegativeImagePath) if isfile(join(origenNegativeImagePath, f))]
+    positiveImageFiles = [f for f in listdir(origenPositiveImagePath) if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
+    negativeImageFiles = [f for f in listdir(origenNegativeImagePath) if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
 
     positiveCount = len(positiveImageFiles)
     negativeCount = len(negativeImageFiles)
