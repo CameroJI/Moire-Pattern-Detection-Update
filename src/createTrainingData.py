@@ -32,6 +32,7 @@ def transformImageAndSave(image, f, customStr, path):
     fLH = f.replace(fileName, f'{fileName}_{customStr}LH').replace(os.path.splitext(f)[-1], '.tiff')
     fHL = f.replace(fileName, f'{fileName}_{customStr}HL').replace(os.path.splitext(f)[-1], '.tiff')
     fHH = f.replace(fileName, f'{fileName}_{customStr}HH').replace(os.path.splitext(f)[-1], '.tiff')
+    
     cA = Image.fromarray(cA)
     cH = Image.fromarray(cH)
     cV = Image.fromarray(cV)
@@ -73,6 +74,9 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
 def PreprocessImage(imgPath, width, height):
     img = Image.open(imgPath)
     w, h = img.size
+    
+    width *= 8
+    height *= 8
     
     if w < width or h < height:
         proportion = min(width / w, height / h)
