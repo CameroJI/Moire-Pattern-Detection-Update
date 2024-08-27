@@ -40,8 +40,8 @@ def transformImageAndSave(image, f, customStr, path):
     
     cA = cA.resize((width, height), Image.LANCZOS)
     cH = cH.resize((width, height), Image.LANCZOS)
-    cV = cA.resize((width, height), Image.LANCZOS)
-    cD = cA.resize((width, height), Image.LANCZOS)
+    cV = cV.resize((width, height), Image.LANCZOS)
+    cD = cD.resize((width, height), Image.LANCZOS)
     
     cA.save(join(path, fLL))
     cH.save(join(path, fLH))
