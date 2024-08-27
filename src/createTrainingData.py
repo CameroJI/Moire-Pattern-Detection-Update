@@ -63,16 +63,25 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
         imgGray = imgGray.rotate(-90, expand=1)
     transformImageAndSave(imgGray, f, '', trainFolder)
 
-    imgGray = imgGray.rotate(45, expand=True)
+    imgGray = PreprocessImage(imgGray.rotate(45, expand=True), width, height)
     transformImageAndSave(imgGray, f, '45_', trainFolder)
 
-    imgGray = imgGray.rotate(90, expand=True)
+    imgGray = PreprocessImage(imgGray.rotate(90, expand=True), width, height)
     transformImageAndSave(imgGray, f, '90_', trainFolder)
 
     return True
 
-def PreprocessImage(imgPath, width, height):
-    img = Image.open(imgPath)
+def PreprocessImage(imgInput, width, height):
+    if isinstance(imgInput, str):
+        imgPath = imgInput
+        if not isfile(imgPath):
+            raise FileNotFoundError(f"La imagen en la ruta {imgPath} no fue encontrada.")
+        img = Image.open(imgPath)
+    elif isinstance(imgInput, Image.Image):
+        img = imgInput
+    else:
+        raise ValueError("La entrada debe ser una ruta de archivo o una instancia de PIL.Image.Image.")
+    
     w, h = img.size
     
     if w / h > width / height:  
