@@ -1,6 +1,6 @@
 import sys
 import argparse
-from PIL import Image
+from PIL import Image, ImageOps
 import os
 import time
 from os import listdir
@@ -63,11 +63,11 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
         imgGray = imgGray.rotate(-90, expand=1)
     transformImageAndSave(imgGray, f, '', trainFolder)
 
-    imgGray = imgGray.transpose(Image.ROTATE_180)
-    transformImageAndSave(imgGray, f, '180_', trainFolder)
+    imgGray = imgGray.rotate(45, expand=True)
+    transformImageAndSave(imgGray, f, '45_', trainFolder)
 
-    imgGray = imgGray.transpose(Image.FLIP_LEFT_RIGHT)
-    transformImageAndSave(imgGray, f, '180_FLIP_', trainFolder)
+    imgGray = imgGray.rotate(90, expand=True)
+    transformImageAndSave(imgGray, f, '90_', trainFolder)
 
     return True
 
@@ -75,35 +75,26 @@ def PreprocessImage(imgPath, width, height):
     img = Image.open(imgPath)
     w, h = img.size
     
-    if w < width or h < height:
-        proportion = min(width / w, height / h)
-        new_width = int(w * proportion)
-        new_height = int(h * proportion)
-        
-        img = img.resize((new_width, new_height), Image.LANCZOS)
-        
-        left = (new_width - width) / 2
-        top = (new_height - height) / 2
-        right = (new_width + width) / 2
-        bottom = (new_height + height) / 2
-        
-        img = img.crop((left, top, right, bottom))
-    
-    else:
-        proportion = max(width / w, height / h)
-        new_width = int(w * proportion)
-        new_height = int(h * proportion)
-        
-        img = img.resize((new_width, new_height), Image.LANCZOS)
-        
-        left = (new_width - width) / 2
-        top = (new_height - height) / 2
-        right = (new_width + width) / 2
-        bottom = (new_height + height) / 2
-        
-        img = img.crop((left, top, right, bottom))
-    
-    return img
+    if w / h > width / height:  
+        proportion = width / w
+    else:  
+        proportion = height / h
+
+    new_width = int(w * proportion)
+    new_height = int(h * proportion)
+
+    img = img.resize((new_width, new_height), Image.LANCZOS)
+
+    delta_w = max(0, width - new_width)
+    delta_h = max(0, height - new_height)
+
+    padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
+
+    img = ImageOps.expand(img, padding, fill="black")
+
+    img = img.crop((0, 0, width, height))
+
+    return img.convert('L')
 
 def writelist(fileNames, outputFile):    
     with open(outputFile, 'w') as file:

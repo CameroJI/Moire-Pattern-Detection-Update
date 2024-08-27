@@ -4,10 +4,10 @@ import argparse
 from math import ceil
 import time
 from os import makedirs
-from os.path import join, exists, splitext
-from PIL import Image
+from os.path import join, exists, splitext, isfile
+from PIL import Image, ImageOps
 import random
-from mCNN import createModel
+from mCNN import createModel_mobileNetV2
 import tensorflow as tf
 from tensorflow import keras
 from keras.models import load_model # type: ignore
@@ -82,7 +82,7 @@ def main(args):
         model = load_model(checkpoint_path)
         
     else:
-        model = createModel(height=height, width=width, depth=1)
+        model = createModel_mobileNetV2(height=height, width=width, depth=7)
 
     model.compile(
         loss=lambda y_true, y_pred: custom_loss(y_true, y_pred, weight_pos=21.5, weight_neg=1.0, ssim_weight=0.1),
@@ -95,7 +95,7 @@ def main(args):
     model = trainModel(trainIndex, positiveImagePath, negativeImagePath, positiveDataImagePath, negativeDataImagePath, epoch, numEpochs, 
         epochFilePath, save_epoch, save_iter, batch_size, height, width, checkpoint_path, model)
 
-def readAndScaleImage(f, customStr, originalImagePath, trainImagePath, X_train, X_index, Y, sampleIndex, sampleVal, height, width):
+def readAndScaleImage(f, customStr, imgOrig, trainImagePath, X_train, X_index, Y, sampleIndex, sampleVal, height, width):
     f = str(f)
     fileName = splitext(f)[0]
     fLL = f"{splitext(f.replace(fileName, fileName + customStr + '_LL'))[0]}.tiff"
@@ -108,9 +108,7 @@ def readAndScaleImage(f, customStr, originalImagePath, trainImagePath, X_train, 
         imgLH = PreprocessImage(join(trainImagePath, fLH), width, height)
         imgHL = PreprocessImage(join(trainImagePath, fHL), width, height)
         imgHH = PreprocessImage(join(trainImagePath, fHH), width, height)
-        
-        imgOrig = PreprocessImage(join(originalImagePath, fileName), width, height)
-        
+                
         # DATA AUGMENTATION FOR TRAINING
         imgLL = channelAugmentation(imgLL)
         imgLH = channelAugmentation(imgLH)
@@ -126,7 +124,8 @@ def readAndScaleImage(f, customStr, originalImagePath, trainImagePath, X_train, 
     imgLH = np.array(imgLH)
     imgHL = np.array(imgHL)
     imgHH = np.array(imgHH)
-
+    
+    imgOrig = imgAugmentation(imgOrig)
     imgOrig_np = np.array(imgOrig)
 
     X_train[sampleIndex, :, :, :3] = imgOrig_np[:, :, :3]
@@ -141,56 +140,67 @@ def readAndScaleImage(f, customStr, originalImagePath, trainImagePath, X_train, 
 
     return True
 
-def PreprocessImage(imgPath, width, height):
-    img = Image.open(imgPath)
+def PreprocessImage(imgInput, width, height):
+    if isinstance(imgInput, str):
+        imgPath = imgInput
+        if not isfile(imgPath):
+            raise FileNotFoundError(f"La imagen en la ruta {imgPath} no fue encontrada.")
+        img = Image.open(imgPath)
+    elif isinstance(imgInput, Image.Image):
+        img = imgInput
+    else:
+        raise ValueError("La entrada debe ser una ruta de archivo o una instancia de PIL.Image.Image.")
+    
     w, h = img.size
     
-    if w < width or h < height:
-        proportion = min(width / w, height / h)
-    else:
-        proportion = max(width / w, height / h)
-    
+    if w / h > width / height:  
+        proportion = width / w
+    else:  
+        proportion = height / h
+
     new_width = int(w * proportion)
     new_height = int(h * proportion)
-    
+
     img = img.resize((new_width, new_height), Image.LANCZOS)
-    
-    left = (new_width - width) / 2
-    top = (new_height - height) / 2
-    right = (new_width + width) / 2
-    bottom = (new_height + height) / 2
-    
-    img = img.crop((left, top, right, bottom))
-    
+
+    delta_w = max(0, width - new_width)
+    delta_h = max(0, height - new_height)
+
+    padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
+
+    img = ImageOps.expand(img, padding, fill="black")
+
+    img = img.crop((0, 0, width, height))
+
     return img.convert('L')
 
-def LL_Augmentation(image):
+def imgAugmentation(image):
     image_np = np.array(image)
 
-    if len(image_np.shape) != 2:
-        raise ValueError("The input image must be a 2-D grayscale image.")
+    if len(image_np.shape) != 3 or image_np.shape[2] != 3:
+        raise ValueError("The input image must be a 3-D image with 3 channels (RGB).")
     
     image_tf = tf.convert_to_tensor(image_np, dtype=tf.float32)
-    image_tf = tf.expand_dims(image_tf, axis=-1)  # Añade un canal de color
     
     # Aplicar aumentos
     image_tf = tf.image.random_brightness(image_tf, max_delta=0.15)
-    image_tf = tf.image.random_contrast(image_tf, lower=0.9, upper=1.1)
-
-    image_pil = Image.fromarray(tf.squeeze(image_tf).numpy())
+    image_tf = tf.image.random_contrast(image_tf, lower=0.85, upper=1.15)
     
+    image_np = image_tf.numpy().astype(np.uint8)
+    image_pil = Image.fromarray(image_np)
+
+    # Rotación aleatoria entre -20 y 20 grados
     angle = random.uniform(-20, 20)  # Ángulo entre -20 y 20 grados
     image_pil = image_pil.rotate(angle, resample=Image.BICUBIC, expand=True)
     
     image_np = np.array(image_pil)
     image_tf = tf.convert_to_tensor(image_np, dtype=tf.float32)
-    image_tf = tf.expand_dims(image_tf, axis=-1)
     
+    # Clip valores entre 0 y 255, y convertir a uint8
     image_tf = tf.clip_by_value(image_tf, 0, 255)
     image_tf = tf.cast(image_tf, dtype=tf.uint8)
-    
-    image_tf = tf.squeeze(image_tf, axis=-1)
-    
+
+    # Convertir de vuelta a PIL Image
     image_augmented = Image.fromarray(image_tf.numpy())
     
     return image_augmented
@@ -376,17 +386,18 @@ def getBatch(listInput, posJpgPath, negJpgPath, posPath, negPath, start, end, ba
         pathTiff = posPath if y == 1 else negPath
         pathJpg = posJpgPath if y == 1 else negJpgPath
         
-        ret = readAndScaleImage(file, '', pathJpg, pathTiff, X_train, X_index, Y, sampleIndex, y, height, width)
+        img = PreprocessImage(join(pathJpg, file), width, height)
+        ret = readAndScaleImage(file, '', img, pathTiff, X_train, X_index, Y, sampleIndex, y, height, width)
         if ret == True:
             sampleIndex += 1
 
         #read 180deg rotated data
-        ret = readAndScaleImage(file, '_180', pathJpg, pathTiff, X_train, X_index, Y, sampleIndex, y, height, width)
+        ret = readAndScaleImage(file, '_45', PreprocessImage(img.rotate(45, expand=True), width, height), pathTiff, X_train, X_index, Y, sampleIndex, y, height, width)
         if ret == True:
             sampleIndex += 1
 
         #read 180deg FLIP data
-        ret = readAndScaleImage(file, '_180_FLIP', pathJpg, pathTiff, X_train, X_index, Y, sampleIndex, y, height, width)
+        ret = readAndScaleImage(file, '_90', PreprocessImage(img.rotate(90, expand=True), width, height), pathTiff, X_train, X_index, Y, sampleIndex, y, height, width)
         if ret == True:
             sampleIndex += 1
     
