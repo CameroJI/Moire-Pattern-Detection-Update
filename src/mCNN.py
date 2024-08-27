@@ -1,5 +1,6 @@
 from keras.models import Model # type: ignore
-from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, Multiply, Maximum # type: ignore
+from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, Multiply, Maximum, GlobalAveragePooling2D # type: ignore
+from keras.applications import MobileNetV2  # type: ignore
 from keras import regularizers
 
 def createModel(height, width, depth):
@@ -53,3 +54,17 @@ def createModel(height, width, depth):
     out = Dense(1, activation='sigmoid')(drop_3)  # Capa de salida para clasificación binaria
 
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
+
+def createModel_mobileNetV2(height, width):
+    input_tensor = Input(shape=(height, width, 7))
+    
+    base_model = MobileNetV2(input_shape=(height, width, 7), include_top=False, weights=None)
+    
+    x = base_model(input_tensor)
+    x = GlobalAveragePooling2D()(x)
+    
+    x = Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.01))(x)
+    x = Dropout(0.5)(x)
+    output_tensor = Dense(1, activation='sigmoid')(x)
+    
+    return Model(inputs=input_tensor, outputs=output_tensor)

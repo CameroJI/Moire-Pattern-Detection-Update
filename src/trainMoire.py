@@ -10,6 +10,7 @@ import random
 from mCNN import createModel
 import tensorflow as tf
 from tensorflow import keras
+from keras.models import load_model # type: ignore
 from keras.metrics import Precision, Recall # type: ignore
 from sklearn.metrics import f1_score
 
@@ -74,10 +75,11 @@ def main(args):
     if not exists(checkpointPath):
         makedirs(checkpointPath)
     
-    model = createModel(height=height, width=width, depth=1)
-
     if loadCheckPoint:
-        model.load_weights(checkpoint_path)
+        model = load_model(checkpoint_path)
+        
+    else:
+        model = createModel(height=height, width=width, depth=1)
 
     model.compile(
         loss=lambda y_true, y_pred: custom_loss(y_true, y_pred, weight_pos=21.5, weight_neg=1.0, ssim_weight=0.1),
