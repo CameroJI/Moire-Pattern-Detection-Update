@@ -47,6 +47,9 @@ val_recall_metric = Recall()
 def main(args):
     global optimizer
     
+    positiveImagePath = args.positiveImages
+    negativeImagePath = args.negativeImages
+    
     positiveDataImagePath = args.trainingDataPositive
     negativeDataImagePath = args.trainingDataNegative
     
@@ -89,10 +92,10 @@ def main(args):
     
     epoch = epochFileValidation(epochFilePath, loadCheckPoint, init_epoch)
     
-    model = trainModel(trainIndex, positiveDataImagePath, negativeDataImagePath, epoch, numEpochs, 
+    model = trainModel(trainIndex, positiveImagePath, negativeImagePath, positiveDataImagePath, negativeDataImagePath, epoch, numEpochs, 
         epochFilePath, save_epoch, save_iter, batch_size, height, width, checkpoint_path, model)
 
-def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_index, Y, sampleIndex, sampleVal, height, width):
+def readAndScaleImage(f, customStr, originalImagePath, trainImagePath, X_train, X_index, Y, sampleIndex, sampleVal, height, width):
     f = str(f)
     fileName = splitext(f)[0]
     fLL = f"{splitext(f.replace(fileName, fileName + customStr + '_LL'))[0]}.tiff"
@@ -106,8 +109,10 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
         imgHL = PreprocessImage(join(trainImagePath, fHL), width, height)
         imgHH = PreprocessImage(join(trainImagePath, fHH), width, height)
         
+        imgOrig = PreprocessImage(join(originalImagePath, fileName), width, height)
+        
         # DATA AUGMENTATION FOR TRAINING
-        imgLL = LL_Augmentation(imgLL)
+        imgLL = channelAugmentation(imgLL)
         imgLH = channelAugmentation(imgLH)
         imgHL = channelAugmentation(imgHL)
         imgHH = channelAugmentation(imgHH)
@@ -122,10 +127,14 @@ def readAndScaleImage(f, customStr, trainImagePath, X_LL, X_LH, X_HL, X_HH, X_in
     imgHL = np.array(imgHL)
     imgHH = np.array(imgHH)
 
-    X_LL[sampleIndex, :] = imgLL
-    X_LH[sampleIndex, :] = imgLH
-    X_HL[sampleIndex, :] = imgHL
-    X_HH[sampleIndex, :] = imgHH
+    imgOrig_np = np.array(imgOrig)
+
+    X_train[sampleIndex, :, :, :3] = imgOrig_np[:, :, :3]
+
+    X_train[sampleIndex, :, :, 3] = imgLL
+    X_train[sampleIndex, :, :, 4] = imgLH
+    X_train[sampleIndex, :, :, 5] = imgHL
+    X_train[sampleIndex, :, :, 6] = imgHH 
     
     Y[sampleIndex, 0] = sampleVal
     X_index[sampleIndex, 0] = sampleIndex
@@ -244,9 +253,9 @@ def saveEpochFile(epochFilePath, epoch):
         print(f"\nEpoch Save: {epoch}")
         
 @tf.function
-def train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train):
+def train_step(model, X_train, Y_train):
     with tf.GradientTape() as tape:
-        logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=True)
+        logits = model(X_train, training=True)
         loss_value = tf.reduce_mean(custom_loss(Y_train, logits))
 
     grads = tape.gradient(loss_value, model.trainable_weights)
@@ -261,7 +270,7 @@ def train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train):
 def f1Score(precision, recall):
     return 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
 
-def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_epoch, save_iter, batch_size, height, width, checkpoint_path, model):
+def trainModel(listInput, posJpgPath, negJpgPath, posPath, negPath, epoch, epochs, epochFilePath, save_epoch, save_iter, batch_size, height, width, checkpoint_path, model):
     epoch -= 1
     n = len(listInput)
     start_time_full = time.time()
@@ -271,9 +280,9 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
         start_time = time.time()
         for j in range(ceil(n/batch_size)):
             start, end = defineEpochRange(j, batch_size, n)            
-            X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train = getBatch(listInput, posPath, negPath, start, end, batch_size, height, width)
+            X_train, Y_train = getBatch(listInput, posJpgPath, negJpgPath, posPath, negPath, start, end, batch_size, height, width)
             
-            loss = train_step(model, X_LL_train, X_LH_train, X_HL_train, X_HH_train, Y_train)
+            loss = train_step(model, X_train, Y_train)
             
             print("------------------------------------")
             print(f"Training {end - start} images ({j + 1}/{ceil(n/batch_size)})", end='\t')
@@ -294,7 +303,7 @@ def trainModel(listInput, posPath, negPath, epoch, epochs, epochFilePath, save_e
             train_recall_metric.reset_state()
 
             # Validación
-            val_logits = model([X_LL_train, X_LH_train, X_HL_train, X_HH_train], training=False)
+            val_logits = model(X_train, training=False)
             val_acc_metric.update_state(Y_train, val_logits)
             val_precision_metric.update_state(Y_train, val_logits)
             val_recall_metric.update_state(Y_train, val_logits)
@@ -344,15 +353,12 @@ def saveModel(model, checkpoint_path):
 
 def createElements(batch_size, height, width, multiply):
     totalBatchSize = batch_size*multiply
-    X_LL = np.zeros((totalBatchSize, height, width, 1))
-    X_LH = np.zeros((totalBatchSize, height, width, 1))
-    X_HL = np.zeros((totalBatchSize, height, width, 1))
-    X_HH = np.zeros((totalBatchSize, height, width, 1))
+    X_train = np.zeros((totalBatchSize, height, width, 7))
     X_index = np.zeros((totalBatchSize, 1))
     Y = np.zeros((totalBatchSize, 1))
     
     #return X_LL.astype(np.float32), X_LH.astype(np.float32), X_HL.astype(np.float32), X_HH.astype(np.float32), Y
-    return X_LL, X_LH, X_HL, X_HH, X_index, Y
+    return X_train, X_index, Y
 
 def defineEpochRange(epoch, batch_size, n):
     start = 0 if epoch*batch_size >= n else epoch*batch_size
@@ -360,30 +366,31 @@ def defineEpochRange(epoch, batch_size, n):
     
     return start, end
 
-def getBatch(listInput, posPath, negPath, start, end, batch_size, height, width):
-    X_LL, X_LH, X_HL, X_HH, X_index, Y = createElements(batch_size, height, width, 3)
+def getBatch(listInput, posJpgPath, negJpgPath, posPath, negPath, start, end, batch_size, height, width):
+    X_train, X_index, Y = createElements(batch_size, height, width, 3)
 
     sampleIndex = 0
     for f in listInput[start:end]:
         file = str(f[0])
         y = int(f[1])
-        path = posPath if y == 1 else negPath
+        pathTiff = posPath if y == 1 else negPath
+        pathJpg = posJpgPath if y == 1 else negJpgPath
         
-        ret = readAndScaleImage(file, '', path, X_LL, X_LH, X_HL, X_HH, X_index, Y, sampleIndex, y, height, width)
+        ret = readAndScaleImage(file, '', pathJpg, pathTiff, X_train, X_index, Y, sampleIndex, y, height, width)
         if ret == True:
             sampleIndex += 1
 
         #read 180deg rotated data
-        ret = readAndScaleImage(file, '_180', path, X_LL, X_LH, X_HL, X_HH, X_index, Y, sampleIndex, y, height, width)
+        ret = readAndScaleImage(file, '_180', pathJpg, pathTiff, X_train, X_index, Y, sampleIndex, y, height, width)
         if ret == True:
             sampleIndex += 1
 
         #read 180deg FLIP data
-        ret = readAndScaleImage(file, '_180_FLIP', path, X_LL, X_LH, X_HL, X_HH, X_index, Y, sampleIndex, y, height, width)
+        ret = readAndScaleImage(file, '_180_FLIP', pathJpg, pathTiff, X_train, X_index, Y, sampleIndex, y, height, width)
         if ret == True:
             sampleIndex += 1
     
-    return X_LL, X_LH, X_HL, X_HH, Y
+    return X_train, Y
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1', 'True'):
@@ -395,6 +402,9 @@ def str2bool(v):
 
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
+    
+    parser.add_argument('--positiveImages', type=str, help='Directory with original positive (Moiré pattern) images.')
+    parser.add_argument('--negativeImages', type=str, help='Directory with original negative (Normal) images.')
         
     parser.add_argument('--trainingDataPositive', type=str, help='Directory with transformed positive (Moiré pattern) images.')
     parser.add_argument('--trainingDataNegative', type=str, help='Directory with transformed negative (Normal) images.')
