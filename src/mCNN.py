@@ -55,10 +55,10 @@ def createModel(height, width, depth):
 
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
 
-def createModel_mobileNetV2(height, width):
-    input_tensor = Input(shape=(height, width, 7))
+def createModel_mobileNetV2(height, width, depth=7):
+    input_tensor = Input(shape=(height, width, depth))
     
-    base_model = MobileNetV2(input_shape=(height, width, 7), include_top=False, weights=None)
+    base_model = MobileNetV2(input_shape=(height, width, depth), include_top=False, weights=None)
     
     x = base_model(input_tensor)
     x = GlobalAveragePooling2D()(x)
