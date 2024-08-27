@@ -75,9 +75,6 @@ def PreprocessImage(imgPath, width, height):
     img = Image.open(imgPath)
     w, h = img.size
     
-    width *= 8
-    height *= 8
-    
     if w < width or h < height:
         proportion = min(width / w, height / h)
         new_width = int(w * proportion)
