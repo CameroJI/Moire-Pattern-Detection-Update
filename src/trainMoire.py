@@ -19,8 +19,8 @@ def custom_loss(y_true, y_pred, weight_pos=1.0, weight_neg=1.0, ssim_weight=0.1)
     y_pred = tf.cast(y_pred, tf.float32)
     
     # Verificar dimensiones
-    print("y_true shape:", tf.shape(y_true))
-    print("y_pred shape:", tf.shape(y_pred))
+    print(f"y_true shape: {tf.shape(y_true)}\ty_true:", y_true)
+    print(f"y_pred shape: {tf.shape(y_pred)}\ty_pred:", y_pred)
 
     # Si es necesario, redimensionar y_true para que coincida con y_pred
     if len(tf.shape(y_true)) == 4 and len(tf.shape(y_pred)) == 4:
