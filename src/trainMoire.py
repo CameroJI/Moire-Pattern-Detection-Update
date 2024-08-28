@@ -104,10 +104,10 @@ def readAndScaleImage(f, customStr, imgOrig, trainImagePath, X_train, X_index, Y
     fHH = f"{splitext(f.replace(fileName, fileName + customStr + '_HH'))[0]}.png"
     
     try:
-        imgLL = PreprocessImage(join(trainImagePath, fLL), width, height)
-        imgLH = PreprocessImage(join(trainImagePath, fLH), width, height)
-        imgHL = PreprocessImage(join(trainImagePath, fHL), width, height)
-        imgHH = PreprocessImage(join(trainImagePath, fHH), width, height)
+        imgLL = PreprocessImage(join(trainImagePath, fLL), width, height).convert('L')
+        imgLH = PreprocessImage(join(trainImagePath, fLH), width, height).convert('L')
+        imgHL = PreprocessImage(join(trainImagePath, fHL), width, height).convert('L')
+        imgHH = PreprocessImage(join(trainImagePath, fHH), width, height).convert('L')
                 
         # DATA AUGMENTATION FOR TRAINING
         imgLL = channelAugmentation(imgLL)
@@ -172,7 +172,7 @@ def PreprocessImage(imgInput, width, height):
 
     img = img.crop((0, 0, width, height))
 
-    return img.convert('L')
+    return img
 
 def imgAugmentation(image):
     image_np = np.array(image)
