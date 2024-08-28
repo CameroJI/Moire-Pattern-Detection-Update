@@ -65,13 +65,13 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
     imgGray = img.convert('L')
     wdChk, htChk = imgGray.size
     if htChk > wdChk:
-        imgGray = imgGray.rotate(-90, expand=1)
-    transformImageAndSave(imgGray, f, '', trainFolder)
+        imgGrayOrig = imgGray.rotate(-90, expand=1)
+    transformImageAndSave(imgGrayOrig, f, '', trainFolder)
 
-    imgGray = PreprocessImage(imgGray.rotate(45, expand=True), width, height)
+    imgGray = PreprocessImage(imgGrayOrig.rotate(45, expand=True), width, height)
     transformImageAndSave(imgGray, f, '45_', trainFolder)
 
-    imgGray = PreprocessImage(imgGray.rotate(90, expand=True), width, height)
+    imgGray = PreprocessImage(imgGrayOrig.rotate(90, expand=True), width, height)
     transformImageAndSave(imgGray, f, '90_', trainFolder)
 
     return True
