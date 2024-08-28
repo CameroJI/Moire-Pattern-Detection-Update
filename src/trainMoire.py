@@ -26,7 +26,9 @@ def custom_loss(y_true, y_pred, weight_pos=1.0, weight_neg=1.0):
 
     return weighted_binary_loss
 
-optimizer = keras.optimizers.Adam(learning_rate=1e-3)
+initial_learning_rate = 0.01
+optimizer = tf.keras.optimizers.Adam(learning_rate=initial_learning_rate)
+
 train_acc_metric = keras.metrics.BinaryAccuracy()
 val_acc_metric = keras.metrics.BinaryAccuracy()
 
@@ -58,10 +60,16 @@ def main(args):
     height = args.height
     width = args.width
     
-    learning_rate = args.learning_rate
+    initial_learning_rate = args.learning_rate
     
-    optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
-        
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+    initial_learning_rate,
+    decay_steps=10000,  # Número de pasos antes de aplicar la reducción
+    decay_rate=0.9,  # Tasa de decaimiento
+    staircase=True)  # Si True, el learning rate decae en un escalón
+
+    optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
+            
     trainIndex = createIndex(positiveDataImagePath, negativeDataImagePath)
 
     epochFilePath = f"{checkpointPath}/epoch.txt"
