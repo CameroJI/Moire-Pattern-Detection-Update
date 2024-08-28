@@ -14,6 +14,9 @@ from keras.models import load_model # type: ignore
 from keras.metrics import Precision, Recall # type: ignore
 from sklearn.metrics import f1_score
 
+def custom_loss_function(y_true, y_pred):
+    return custom_loss(y_true, y_pred, weight_pos=21.5, weight_neg=1.0, ssim_weight=0.1)
+
 def custom_loss(y_true, y_pred, weight_pos=1.0, weight_neg=1.0):
     tf.debugging.assert_equal(tf.shape(y_true), tf.shape(y_pred), message="Las dimensiones de y_true y y_pred no coinciden.")
     
@@ -90,7 +93,7 @@ def main(args):
         model = createModel_mobileNetV2(height=height, width=width, depth=7)
 
     model.compile(
-        loss=lambda y_true, y_pred: custom_loss(y_true, y_pred, weight_pos=21.5, weight_neg=1.0, ssim_weight=0.1),
+        loss=custom_loss_function,
         optimizer='adam',
         metrics=['accuracy', 'precision', 'recall', 'f1_score']
     )
