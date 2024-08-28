@@ -287,7 +287,6 @@ def train_step(model, X_train, Y_train):
         loss_value = tf.keras.losses.binary_crossentropy(Y_train, y_pred, from_logits=False)
         loss_value = tf.reduce_mean(loss_value)
 
-        
     grads = tape.gradient(loss_value, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights))
     
@@ -299,8 +298,17 @@ def train_step(model, X_train, Y_train):
         
 @tf.function
 def f1Score(y_true, y_pred):
-    precision = tf.keras.metrics.Precision()(y_true, y_pred)
-    recall = tf.keras.metrics.Recall()(y_true, y_pred)
+    y_pred_bin = tf.round(y_pred)
+    
+    precision_metric = tf.keras.metrics.Precision()
+    recall_metric = tf.keras.metrics.Recall()
+    
+    precision_metric.update_state(y_true, y_pred_bin)
+    recall_metric.update_state(y_true, y_pred_bin)
+    
+    precision = precision_metric.result()
+    recall = recall_metric.result()
+    
     return 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
 
 @tf.function
@@ -345,8 +353,7 @@ def trainModel(listInput, posJpgPath, negJpgPath, posPath, negPath, epoch, epoch
             # Convert the loss tensor to a numpy value for formatting
             loss_value = loss.numpy() if isinstance(loss, tf.Tensor) else loss
             print(f"Training {end - start} images ({j + 1}/{ceil(n/batch_size)})", end='\t')
-            # print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss: {loss_value*100:.2f}%')
-            print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss:', loss_value)
+            print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss: {loss_value*100:.2f}%')
             
             train_acc = train_acc_metric.result()
             train_precision = train_precision_metric.result()
