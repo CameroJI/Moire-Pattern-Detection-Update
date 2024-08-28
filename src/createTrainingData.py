@@ -38,15 +38,15 @@ def transformImageAndSave(image, f, customStr, path):
     cV = Image.fromarray(cV)
     cD = Image.fromarray(cD)
     
-    cA = cA.convert('L')
-    cH = cH.convert('L')
-    cV = cV.convert('L')
-    cD = cD.convert('L')
-    
     cA = cA.resize((width, height), Image.LANCZOS)
     cH = cH.resize((width, height), Image.LANCZOS)
     cV = cV.resize((width, height), Image.LANCZOS)
     cD = cD.resize((width, height), Image.LANCZOS)
+    
+    cA = cA.convert('L')
+    cH = cH.convert('L')
+    cV = cV.convert('L')
+    cD = cD.convert('L')
     
     cA.save(join(path, fLL))
     cH.save(join(path, fLH))
