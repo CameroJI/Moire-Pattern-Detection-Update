@@ -94,7 +94,7 @@ def main(args):
     model.compile(
         loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
         optimizer='adam',
-        metrics=['accuracy', 'precision', 'recall', f1_score]
+        metrics=['accuracy', 'precision', 'recall', f1Score]
     )
     
     epoch = epochFileValidation(epochFilePath, loadCheckPoint, init_epoch)
@@ -296,7 +296,7 @@ def train_step(model, X_train, Y_train):
     return loss_value
         
 @tf.function
-def f1_score(y_true, y_pred):
+def f1Score(y_true, y_pred):
     precision = tf.keras.metrics.Precision()(y_true, y_pred)
     recall = tf.keras.metrics.Recall()(y_true, y_pred)
     return 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
@@ -315,7 +315,7 @@ def validate_step(model, X_val, Y_val):
     val_precision = val_precision_metric.result()
     val_recall = val_recall_metric.result()
     
-    val_f1 = f1_score(Y_val, val_y_pred_bin)
+    val_f1 = f1Score(Y_val, val_y_pred_bin)
     
     val_acc_metric.reset_state()
     val_precision_metric.reset_state()
@@ -340,13 +340,15 @@ def trainModel(listInput, posJpgPath, negJpgPath, posPath, negPath, epoch, epoch
             loss = train_step(model, X_train, Y_train)
             
             print("------------------------------------")
+            # Convert the loss tensor to a numpy value for formatting
+            loss_value = loss.numpy() if isinstance(loss, tf.Tensor) else loss
             print(f"Training {end - start} images ({j + 1}/{ceil(n/batch_size)})", end='\t')
-            print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss: {loss*100:.2f}%')
+            print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss: {loss_value*100:.2f}%')
             
             train_acc = train_acc_metric.result()
             train_precision = train_precision_metric.result()
             train_recall = train_recall_metric.result()
-            f1 = f1_score(train_precision, train_recall)
+            f1 = f1Score(train_precision, train_recall)
             
             print(f'\nTraining acc over batch: {float(train_acc.numpy())*100:.2f}%')
             print(f'Training precision over batch: {float(train_precision.numpy())*100:.2f}%')
