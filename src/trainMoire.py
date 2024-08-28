@@ -12,7 +12,6 @@ import tensorflow as tf
 from tensorflow import keras
 from keras.models import load_model # type: ignore
 from keras.metrics import Precision, Recall # type: ignore
-from sklearn.metrics import f1_score
 
 def custom_loss_function(y_true, y_pred):
     return custom_loss(y_true, y_pred, weight_pos=21.5, weight_neg=1.0, ssim_weight=0.1)
@@ -93,9 +92,9 @@ def main(args):
         model = createModel_mobileNetV2(height=height, width=width, depth=7)
 
     model.compile(
-        loss=custom_loss_function,
+        loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
         optimizer='adam',
-        metrics=['accuracy', 'precision', 'recall', 'f1_score']
+        metrics=['accuracy', 'precision', 'recall', f1_score]
     )
     
     epoch = epochFileValidation(epochFilePath, loadCheckPoint, init_epoch)
@@ -285,7 +284,7 @@ def train_step(model, X_train, Y_train):
     with tf.GradientTape() as tape:
         logits = model(X_train, training=True)
         y_pred = tf.sigmoid(logits)
-        loss_value = custom_loss(Y_train, y_pred)
+        loss_value = tf.keras.losses.binary_crossentropy(Y_train, y_pred, from_logits=False)
     
     grads = tape.gradient(loss_value, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights))
@@ -297,22 +296,30 @@ def train_step(model, X_train, Y_train):
     return loss_value
         
 @tf.function
-def f1Score(precision, recall):
+def f1_score(y_true, y_pred):
+    precision = tf.keras.metrics.Precision()(y_true, y_pred)
+    recall = tf.keras.metrics.Recall()(y_true, y_pred)
     return 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
 
 @tf.function
 def validate_step(model, X_val, Y_val):
     val_logits = model(X_val, training=False)
     val_y_pred = tf.sigmoid(val_logits)
-    
-    val_acc_metric.update_state(Y_val, val_y_pred)
-    val_precision_metric.update_state(Y_val, val_y_pred)
-    val_recall_metric.update_state(Y_val, val_y_pred)
-    
+    val_y_pred_bin = tf.round(val_y_pred)
+
+    val_acc_metric.update_state(Y_val, val_y_pred_bin)
+    val_precision_metric.update_state(Y_val, val_y_pred_bin)
+    val_recall_metric.update_state(Y_val, val_y_pred_bin)
+
     val_acc = val_acc_metric.result()
     val_precision = val_precision_metric.result()
     val_recall = val_recall_metric.result()
-    val_f1 = f1Score(val_precision, val_recall)
+    
+    val_f1 = f1_score(Y_val, val_y_pred_bin)
+    
+    val_acc_metric.reset_state()
+    val_precision_metric.reset_state()
+    val_recall_metric.reset_state()
     
     return val_acc, val_precision, val_recall, val_f1
 
@@ -339,7 +346,7 @@ def trainModel(listInput, posJpgPath, negJpgPath, posPath, negPath, epoch, epoch
             train_acc = train_acc_metric.result()
             train_precision = train_precision_metric.result()
             train_recall = train_recall_metric.result()
-            f1 = f1Score(train_precision, train_recall)
+            f1 = f1_score(train_precision, train_recall)
             
             print(f'\nTraining acc over batch: {float(train_acc.numpy())*100:.2f}%')
             print(f'Training precision over batch: {float(train_precision.numpy())*100:.2f}%')
@@ -351,10 +358,10 @@ def trainModel(listInput, posJpgPath, negJpgPath, posPath, negPath, epoch, epoch
             train_precision_metric.reset_state()
             train_recall_metric.reset_state()
 
-            # Validación
+            # Validación (usando un conjunto de validación separado si está disponible)
             val_acc, val_precision, val_recall, val_f1 = validate_step(model, X_train, Y_train)
             
-            print(f'Validation acc: {float(val_acc.numpy())*100:.2f}%')
+            print(f'\nValidation acc: {float(val_acc.numpy())*100:.2f}%')
             print(f'Validation precision: {float(val_precision.numpy())*100:.2f}%')
             print(f'Validation recall: {float(val_recall.numpy())*100:.2f}%')
             print(f'Validation F1-score: {float(val_f1.numpy())*100:.2f}%')
