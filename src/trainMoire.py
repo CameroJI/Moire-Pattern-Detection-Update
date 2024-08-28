@@ -36,7 +36,7 @@ def custom_loss(y_true, y_pred, weight_pos=1.0, weight_neg=1.0, ssim_weight=0.1)
     weighted_binary_loss = binary_loss + weight_pos * false_positives - weight_neg * true_negatives
 
     # Calcular SSIM
-    ssim_value = tf.image.ssim(y_true_resized, y_pred, max_val=1.0)
+    ssim_value = tf.image.ssim(y_true_resized, y_pred, max_val=255.0)
     ssim_loss = 1 - ssim_value
 
     # Combinar la pérdida ponderada y SSIM
