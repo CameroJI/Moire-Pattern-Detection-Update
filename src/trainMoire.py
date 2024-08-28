@@ -190,8 +190,18 @@ def imgAugmentation(image):
     image_pil = Image.fromarray(image_np)
 
     # Rotación aleatoria entre -20 y 20 grados
-    angle = random.uniform(-20, 20)  # Ángulo entre -20 y 20 grados
+    angle = random.uniform(-20, 20)
     image_pil = image_pil.rotate(angle, resample=Image.BICUBIC, expand=True)
+
+    # Obtener dimensiones originales
+    original_width, original_height = image.size
+    # Recortar la imagen rotada al tamaño original
+    left = (image_pil.width - original_width) / 2
+    top = (image_pil.height - original_height) / 2
+    right = (image_pil.width + original_width) / 2
+    bottom = (image_pil.height + original_height) / 2
+
+    image_pil = image_pil.crop((left, top, right, bottom))
     
     image_np = np.array(image_pil)
     image_tf = tf.convert_to_tensor(image_np, dtype=tf.float32)
