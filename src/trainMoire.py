@@ -17,7 +17,14 @@ from sklearn.metrics import f1_score
 def custom_loss(y_true, y_pred, weight_pos=1.0, weight_neg=1.0):
     tf.debugging.assert_equal(tf.shape(y_true), tf.shape(y_pred), message="Las dimensiones de y_true y y_pred no coinciden.")
     
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+    
     binary_loss = tf.keras.losses.binary_crossentropy(y_true, y_pred, from_logits=False)
+    
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+    
     false_positives = tf.reduce_sum((1 - y_true) * y_pred, axis=-1)
     true_negatives = tf.reduce_sum((1 - y_true) * (1 - y_pred), axis=-1)
     weighted_binary_loss = binary_loss + weight_pos * false_positives - weight_neg * true_negatives
