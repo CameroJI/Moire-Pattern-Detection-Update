@@ -343,7 +343,8 @@ def trainModel(listInput, posJpgPath, negJpgPath, posPath, negPath, epoch, epoch
             # Convert the loss tensor to a numpy value for formatting
             loss_value = loss.numpy() if isinstance(loss, tf.Tensor) else loss
             print(f"Training {end - start} images ({j + 1}/{ceil(n/batch_size)})", end='\t')
-            print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss: {loss_value*100:.2f}%')
+            # print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss: {loss_value*100:.2f}%')
+            print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss:', loss_value)
             
             train_acc = train_acc_metric.result()
             train_precision = train_precision_metric.result()
