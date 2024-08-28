@@ -15,16 +15,14 @@ from keras.metrics import Precision, Recall # type: ignore
 from sklearn.metrics import f1_score
 
 def custom_loss(y_true, y_pred, weight_pos=1.0, weight_neg=1.0):
-    if tf.shape(y_true) != tf.shape(y_pred):
-        raise ValueError("Las dimensiones de y_true y y_pred no coinciden.")
+    tf.debugging.assert_equal(tf.shape(y_true), tf.shape(y_pred), message="Las dimensiones de y_true y y_pred no coinciden.")
     
-    # Calcular la pérdida binaria ponderada
     binary_loss = tf.keras.losses.binary_crossentropy(y_true, y_pred, from_logits=False)
     false_positives = tf.reduce_sum((1 - y_true) * y_pred, axis=-1)
     true_negatives = tf.reduce_sum((1 - y_true) * (1 - y_pred), axis=-1)
     weighted_binary_loss = binary_loss + weight_pos * false_positives - weight_neg * true_negatives
 
-    return weighted_binary_loss
+    return tf.reduce_mean(weighted_binary_loss)
 
 initial_learning_rate = 0.01
 optimizer = tf.keras.optimizers.Adam(learning_rate=initial_learning_rate)
