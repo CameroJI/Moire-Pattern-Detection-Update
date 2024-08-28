@@ -62,10 +62,10 @@ def augmentAndTransformImage(f, mainFolder, trainFolder):
         print(f'Error: couldn\'t read the file {f}. Make sure only images are present in the folder')
         return None
 
-    imgGray = img.convert('L')
+    imgGrayOrig = img.convert('L')
     wdChk, htChk = imgGray.size
     if htChk > wdChk:
-        imgGrayOrig = imgGray.rotate(-90, expand=1)
+        imgGrayOrig = imgGrayOrig.rotate(-90, expand=1)
     transformImageAndSave(imgGrayOrig, f, '', trainFolder)
 
     imgGray = PreprocessImage(imgGrayOrig.rotate(45, expand=True), width, height)
