@@ -98,10 +98,10 @@ def main(args):
 def readAndScaleImage(f, customStr, imgOrig, trainImagePath, X_train, X_index, Y, sampleIndex, sampleVal, height, width):
     f = str(f)
     fileName = splitext(f)[0]
-    fLL = f"{splitext(f.replace(fileName, fileName + customStr + '_LL'))[0]}.tiff"
-    fLH = f"{splitext(f.replace(fileName, fileName + customStr + '_LH'))[0]}.tiff"
-    fHL = f"{splitext(f.replace(fileName, fileName + customStr + '_HL'))[0]}.tiff"
-    fHH = f"{splitext(f.replace(fileName, fileName + customStr + '_HH'))[0]}.tiff"
+    fLL = f"{splitext(f.replace(fileName, fileName + customStr + '_LL'))[0]}.png"
+    fLH = f"{splitext(f.replace(fileName, fileName + customStr + '_LH'))[0]}.png"
+    fHL = f"{splitext(f.replace(fileName, fileName + customStr + '_HL'))[0]}.png"
+    fHH = f"{splitext(f.replace(fileName, fileName + customStr + '_HH'))[0]}.png"
     
     try:
         imgLL = PreprocessImage(join(trainImagePath, fLL), width, height)

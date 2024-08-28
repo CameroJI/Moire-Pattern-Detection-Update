@@ -28,15 +28,20 @@ def transformImageAndSave(image, f, customStr, path):
     cA, cH, cV, cD = fwdHaarDWT2D(image)
 
     fileName = os.path.splitext(f)[0]
-    fLL = f.replace(fileName, f'{fileName}_{customStr}LL').replace(os.path.splitext(f)[-1], '.tiff')
-    fLH = f.replace(fileName, f'{fileName}_{customStr}LH').replace(os.path.splitext(f)[-1], '.tiff')
-    fHL = f.replace(fileName, f'{fileName}_{customStr}HL').replace(os.path.splitext(f)[-1], '.tiff')
-    fHH = f.replace(fileName, f'{fileName}_{customStr}HH').replace(os.path.splitext(f)[-1], '.tiff')
+    fLL = f.replace(fileName, f'{fileName}_{customStr}LL').replace(os.path.splitext(f)[-1], '.png')
+    fLH = f.replace(fileName, f'{fileName}_{customStr}LH').replace(os.path.splitext(f)[-1], '.png')
+    fHL = f.replace(fileName, f'{fileName}_{customStr}HL').replace(os.path.splitext(f)[-1], '.png')
+    fHH = f.replace(fileName, f'{fileName}_{customStr}HH').replace(os.path.splitext(f)[-1], '.png')
     
     cA = Image.fromarray(cA)
     cH = Image.fromarray(cH)
     cV = Image.fromarray(cV)
     cD = Image.fromarray(cD)
+    
+    cA = cA.convert('L')
+    cH = cH.convert('L')
+    cV = cV.convert('L')
+    cD = cD.convert('L')
     
     cA = cA.resize((width, height), Image.LANCZOS)
     cH = cH.resize((width, height), Image.LANCZOS)
