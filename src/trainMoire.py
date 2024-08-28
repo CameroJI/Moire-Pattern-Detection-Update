@@ -285,7 +285,9 @@ def train_step(model, X_train, Y_train):
         logits = model(X_train, training=True)
         y_pred = tf.sigmoid(logits)
         loss_value = tf.keras.losses.binary_crossentropy(Y_train, y_pred, from_logits=False)
-    
+        loss_value = tf.reduce_mean(loss_value)
+
+        
     grads = tape.gradient(loss_value, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights))
     
