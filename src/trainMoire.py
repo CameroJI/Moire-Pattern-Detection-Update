@@ -73,9 +73,9 @@ def main(args):
     
     lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
     initial_learning_rate,
-    decay_steps=10000,  # Número de pasos antes de aplicar la reducción
-    decay_rate=0.9,  # Tasa de decaimiento
-    staircase=True)  # Si True, el learning rate decae en un escalón
+    decay_steps=10000,
+    decay_rate=0.9,
+    staircase=True)
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
             
