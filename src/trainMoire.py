@@ -281,28 +281,48 @@ def saveEpochFile(epochFilePath, epoch):
 def train_step(model, X_train, Y_train):
     with tf.GradientTape() as tape:
         logits = model(X_train, training=True)
-        loss_value = tf.reduce_mean(custom_loss(Y_train, logits))
-
+        y_pred = tf.sigmoid(logits)
+        loss_value = custom_loss(Y_train, y_pred)
+    
     grads = tape.gradient(loss_value, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights))
     
-    train_acc_metric.update_state(Y_train, logits)
-    train_precision_metric.update_state(Y_train, logits)
-    train_recall_metric.update_state(Y_train, logits)
+    train_acc_metric.update_state(Y_train, y_pred)
+    train_precision_metric.update_state(Y_train, y_pred)
+    train_recall_metric.update_state(Y_train, y_pred)
     
     return loss_value
         
+@tf.function
 def f1Score(precision, recall):
     return 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
+
+@tf.function
+def validate_step(model, X_val, Y_val):
+    val_logits = model(X_val, training=False)
+    val_y_pred = tf.sigmoid(val_logits)
+    
+    val_acc_metric.update_state(Y_val, val_y_pred)
+    val_precision_metric.update_state(Y_val, val_y_pred)
+    val_recall_metric.update_state(Y_val, val_y_pred)
+    
+    val_acc = val_acc_metric.result()
+    val_precision = val_precision_metric.result()
+    val_recall = val_recall_metric.result()
+    val_f1 = f1Score(val_precision, val_recall)
+    
+    return val_acc, val_precision, val_recall, val_f1
 
 def trainModel(listInput, posJpgPath, negJpgPath, posPath, negPath, epoch, epochs, epochFilePath, save_epoch, save_iter, batch_size, height, width, checkpoint_path, model):
     epoch -= 1
     n = len(listInput)
     start_time_full = time.time()
+    
     for i in range(epochs - epoch):
         saveEpochFile(epochFilePath, i + 1)
         print(f"epoch: {i + epoch + 1}/{epochs}\n")
         start_time = time.time()
+        
         for j in range(ceil(n/batch_size)):
             start, end = defineEpochRange(j, batch_size, n)            
             X_train, Y_train = getBatch(listInput, posJpgPath, negJpgPath, posPath, negPath, start, end, batch_size, height, width)
@@ -312,6 +332,7 @@ def trainModel(listInput, posJpgPath, negJpgPath, posPath, negPath, epoch, epoch
             print("------------------------------------")
             print(f"Training {end - start} images ({j + 1}/{ceil(n/batch_size)})", end='\t')
             print(f'start: {start}\tend: {end}\tTotal Images:{len(listInput)}\tLoss: {loss*100:.2f}%')
+            
             train_acc = train_acc_metric.result()
             train_precision = train_precision_metric.result()
             train_recall = train_recall_metric.result()
@@ -328,14 +349,7 @@ def trainModel(listInput, posJpgPath, negJpgPath, posPath, negPath, epoch, epoch
             train_recall_metric.reset_state()
 
             # Validación
-            val_logits = model(X_train, training=False)
-            val_acc_metric.update_state(Y_train, val_logits)
-            val_precision_metric.update_state(Y_train, val_logits)
-            val_recall_metric.update_state(Y_train, val_logits)
-            val_acc = val_acc_metric.result()
-            val_precision = val_precision_metric.result()
-            val_recall = val_recall_metric.result()
-            val_f1 = f1Score(val_precision, val_recall)
+            val_acc, val_precision, val_recall, val_f1 = validate_step(model, X_train, Y_train)
             
             print(f'Validation acc: {float(val_acc.numpy())*100:.2f}%')
             print(f'Validation precision: {float(val_precision.numpy())*100:.2f}%')
@@ -359,6 +373,7 @@ def trainModel(listInput, posJpgPath, negJpgPath, posPath, negPath, epoch, epoch
         if (i + 1) % save_epoch == 0:
             saveModel(model, checkpoint_path)
         print("------------------------------------")
+    
     saveModel(model, checkpoint_path)
 
     end_time_full = time.time()
