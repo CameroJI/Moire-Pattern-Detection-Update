@@ -236,7 +236,7 @@ def createIndex(posPath, negPath):
 def readLstFile(path, filename):
     listPath = join(path, filename)
     with open(listPath, 'r') as file:
-        lines = file.readlines()
+        lines = [line.strip() for line in file]
 
     return lines
 
