@@ -14,7 +14,7 @@ from keras.models import load_model # type: ignore
 from keras.metrics import Precision, Recall # type: ignore
 from sklearn.metrics import f1_score
 
-def custom_loss(y_true, y_pred, weight_pos=1.0, weight_neg=1.0, ssim_weight=0.1):
+def custom_loss(y_true, y_pred, weight_pos=1.0, weight_neg=1.0):
     y_true = tf.cast(y_true, tf.float32)
     y_pred = tf.cast(y_pred, tf.float32)
     
@@ -22,27 +22,13 @@ def custom_loss(y_true, y_pred, weight_pos=1.0, weight_neg=1.0, ssim_weight=0.1)
     print(f"y_true shape: {tf.shape(y_true)}\ty_true:", y_true)
     print(f"y_pred shape: {tf.shape(y_pred)}\ty_pred:", y_pred)
 
-    # Si es necesario, redimensionar y_true para que coincida con y_pred
-    if len(tf.shape(y_true)) == 4 and len(tf.shape(y_pred)) == 4:
-        target_shape = tf.shape(y_pred)[1:3]  # [height, width]
-        y_true_resized = tf.image.resize(y_true, target_shape)
-    else:
-        y_true_resized = y_true
-
     # Calcular la pérdida binaria ponderada
-    binary_loss = tf.keras.losses.binary_crossentropy(y_true, y_pred, from_logits=False)
+    binary_loss = tf.keras.losses.binary_crossentropy(y_true, y_pred, from_logits=True)
     false_positives = tf.reduce_sum((1 - y_true) * y_pred, axis=-1)
     true_negatives = tf.reduce_sum((1 - y_true) * (1 - y_pred), axis=-1)
     weighted_binary_loss = binary_loss + weight_pos * false_positives - weight_neg * true_negatives
 
-    # Calcular SSIM
-    ssim_value = tf.image.ssim(y_true_resized, y_pred, max_val=255.0)
-    ssim_loss = 1 - ssim_value
-
-    # Combinar la pérdida ponderada y SSIM
-    combined_loss = weighted_binary_loss + ssim_weight * ssim_loss
-
-    return combined_loss
+    return weighted_binary_loss
 
 optimizer = keras.optimizers.Adam(learning_rate=1e-3)
 train_acc_metric = keras.metrics.BinaryAccuracy()
