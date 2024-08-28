@@ -44,6 +44,8 @@ train_recall_metric = Recall()
 val_precision_metric = Precision()
 val_recall_metric = Recall()
 
+precision_metric = Precision()
+recall_metric = Recall()
 
 def main(args):
     global optimizer
@@ -303,18 +305,14 @@ def f1Score(y_true, y_pred):
     y_true = tf.reshape(y_true, [-1])
     y_pred_bin = tf.reshape(y_pred_bin, [-1])
     
-    # Print shapes for debugging
-    tf.print("y_true shape:", tf.shape(y_true))
-    tf.print("y_pred_bin shape:", tf.shape(y_pred_bin))
-    
-    precision_metric = tf.keras.metrics.Precision()
-    recall_metric = tf.keras.metrics.Recall()
-    
     precision_metric.update_state(y_true, y_pred_bin)
     recall_metric.update_state(y_true, y_pred_bin)
     
     precision = precision_metric.result()
     recall = recall_metric.result()
+    
+    precision_metric.reset_state()
+    recall_metric.reset_state()
     
     return 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
 
