@@ -1,5 +1,5 @@
 from keras.models import Model # type: ignore
-from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, Add, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU # type: ignore
+from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, Add, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU, DepthwiseConv2D # type: ignore
 from keras.applications import MobileNetV2  # type: ignore
 from keras import regularizers
 
@@ -59,18 +59,18 @@ def createMobileModel(height, width, depth):
     inputs = Input(shape=(height, width, depth))
 
     # Primer bloque convolucional
-    x = Conv2D(16, (3, 3), strides=(2, 2), padding='same')(inputs)  # Reducción de filtros
+    x = Conv2D(32, (3, 3), strides=(2, 2), padding='same')(inputs)
     x = BatchNormalization()(x)
     x = ReLU()(x)
 
     def residual_block(x, filters, kernel_size=(3, 3), strides=(1, 1)):
         shortcut = x
         
-        x = Conv2D(filters, kernel_size, strides=strides, padding='same')(x)
+        x = DepthwiseConv2D(kernel_size, strides=strides, padding='same')(x)
         x = BatchNormalization()(x)
         x = ReLU()(x)
         
-        x = Conv2D(filters, kernel_size, padding='same')(x)
+        x = Conv2D(filters, (1, 1), padding='same')(x)
         x = BatchNormalization()(x)
         
         if x.shape[-1] != shortcut.shape[-1]:
@@ -82,14 +82,14 @@ def createMobileModel(height, width, depth):
         
         return x
 
-    # Reducir el número de bloques residuales o filtros
-    x = residual_block(x, 32)  # Reducido de 64 a 32
-    x = residual_block(x, 64)  # Reducido de 128 a 64
-    x = residual_block(x, 128) # Reducido de 256 a 128
-    x = residual_block(x, 256) # Reducido de 512 a 256
+    # Añadir bloques residuales
+    x = residual_block(x, 64)
+    x = residual_block(x, 128)
+    x = residual_block(x, 256)
+    x = residual_block(x, 512)
 
     x = GlobalAveragePooling2D()(x)
-    x = Dense(512, activation='relu')(x)  # Reducido de 1024 a 512
+    x = Dense(1024, activation='relu')(x)
     x = Dropout(0.5)(x)
     predictions = Dense(1, activation='sigmoid')(x)
     
