@@ -1,5 +1,5 @@
 from keras.models import Model # type: ignore
-from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, Multiply, Maximum, GlobalAveragePooling2D # type: ignore
+from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU # type: ignore
 from keras.applications import MobileNetV2  # type: ignore
 from keras import regularizers
 
@@ -56,14 +56,31 @@ def createModel(height, width, depth):
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
 
 def createModel_mobileNetV2(height, width, depth):
-    #baseModel = MobileNetV2(weights='imagenet', include_top=False, input_shape=(height, width, depth))
-    baseModel = MobileNetV2(weights=None, include_top=False, input_shape=(height, width, depth))
-    # for layer in baseModel.layers:
-    #     layer.trainable = False
+    inputs = Input(shape=(height, width, depth))
 
-    x = baseModel.output
+    x = Conv2D(32, (3, 3), strides=(2, 2), padding='same')(inputs)
+    x = BatchNormalization()(x)
+    x = ReLU()(x)
+
+    def residual_block(x, filters, kernel_size=(3, 3), strides=(1, 1)):
+        shortcut = x
+        x = Conv2D(filters, kernel_size, strides=strides, padding='same')(x)
+        x = BatchNormalization()(x)
+        x = ReLU()(x)
+        x = Conv2D(filters, kernel_size, padding='same')(x)
+        x = BatchNormalization()(x)
+        x = x + shortcut
+        x = ReLU()(x)
+        return x
+
+    x = residual_block(x, 64)
+    x = residual_block(x, 128)
+    x = residual_block(x, 256)
+    x = residual_block(x, 512)
+
     x = GlobalAveragePooling2D()(x)
     x = Dense(1024, activation='relu')(x)
+    x = Dropout(0.5)(x)
     predictions = Dense(1, activation='sigmoid')(x)
     
-    return Model(inputs=baseModel.input, outputs=predictions)
+    return Model(inputs=inputs, outputs=predictions)
