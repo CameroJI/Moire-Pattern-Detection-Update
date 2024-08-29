@@ -1,6 +1,6 @@
 import sys
 import argparse
-from os import makedirs
+from os import makedirs, walk
 from os.path import exists
 import tensorflow as tf
 from tensorflow import keras
@@ -30,9 +30,20 @@ def main(args):
     WIDTH = args.width
     image_size = (HEIGHT, WIDTH)
     
-    learning_rate = args.learning_rate
+    initial_learning_rate = args.learning_rate
+    final_learning_rate = 1e-5
+    decay_steps = countImg(datasetPath) // batch_size
+    decay_rate = (final_learning_rate / initial_learning_rate) ** (1 / decay_steps)
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        initial_learning_rate=initial_learning_rate,
+        decay_steps=decay_steps,
+        decay_rate=decay_rate,
+        staircase=True
+    )
+    
+    optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
             
     checkpointPathModel = f"{checkpointPath}/cp.keras"
     checkpointPathBatch = f"{checkpointPath}/cp_checkpoint.keras"
@@ -41,7 +52,7 @@ def main(args):
 
     model.compile(
         loss='binary_crossentropy',
-        optimizer='adam',
+        optimizer=optimizer,
         metrics=['accuracy', 'recall'])
     
     batchCheckpointCallback = BatchCheckpointCallback(batchesNumber=save_iter, path=checkpointPathBatch)
@@ -75,6 +86,17 @@ def main(args):
         callbacks=[epochCheckpointCallback, batchCheckpointCallback], 
         class_weight=class_weights
         )
+
+def countImg(directory):
+    image_extensions = ('.jpg', '.jpeg', '.png')
+    total_images = 0
+    
+    for root, dirs, files in walk(directory):
+        for file in files:
+            if file.lower().endswith(image_extensions):
+                total_images += 1
+    
+    return total_images
 
 def getModel(loadFlag, path):
     if not exists(path):
