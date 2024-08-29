@@ -13,7 +13,7 @@ class BatchCheckpointCallback(callbacks.Callback):
 
     def on_batch_end(self, batch, logs=None):
         self.count += 1
-        if self.count + 1 % self.batchesNumber == 0:
+        if self.count % self.batchesNumber == 0:
             print('\nGuardando modelo... ', end='')
             self.model.save(self.modelSaveBatchPath)
             print(f'Modelo guardado en {self.modelSaveBatchPath}')
