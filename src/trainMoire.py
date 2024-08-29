@@ -7,7 +7,7 @@ from tensorflow import keras
 from keras.models import load_model # type: ignore
 from keras.layers import Dense # type: ignore
 from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
-from mCNN import createModel_mobileNetV2
+from mCNN import createMobileModel
 from modelCallbacks import BatchCheckpointCallback, EpochCheckpointCallback
 
 HEIGHT = 800
@@ -89,7 +89,7 @@ def getModel(loadFlag, path):
         #     if isinstance(layer, Dense):
         #         layer.trainable = True
     else:
-        model = createModel_mobileNetV2(height=HEIGHT, width=WIDTH, depth=3)
+        model = createMobileModel(height=HEIGHT, width=WIDTH, depth=3)
         
     return model
 

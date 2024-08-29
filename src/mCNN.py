@@ -55,10 +55,11 @@ def createModel(height, width, depth):
 
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
 
-def createModel_mobileNetV2(height, width, depth):
+def createMobileModel(height, width, depth):
     inputs = Input(shape=(height, width, depth))
 
-    x = Conv2D(32, (3, 3), strides=(2, 2), padding='same')(inputs)
+    # Primer bloque convolucional
+    x = Conv2D(16, (3, 3), strides=(2, 2), padding='same')(inputs)  # Reducción de filtros
     x = BatchNormalization()(x)
     x = ReLU()(x)
 
@@ -72,8 +73,8 @@ def createModel_mobileNetV2(height, width, depth):
         x = Conv2D(filters, kernel_size, padding='same')(x)
         x = BatchNormalization()(x)
         
-        if shortcut.shape[-1] != filters:
-            shortcut = Conv2D(filters, (1, 1), padding='same')(shortcut)
+        if x.shape[-1] != shortcut.shape[-1]:
+            shortcut = Conv2D(filters, (1, 1), strides=strides, padding='same')(shortcut)
             shortcut = BatchNormalization()(shortcut)
 
         x = Add()([x, shortcut])
@@ -81,13 +82,14 @@ def createModel_mobileNetV2(height, width, depth):
         
         return x
 
-    x = residual_block(x, 64)
-    x = residual_block(x, 128)
-    x = residual_block(x, 256)
-    x = residual_block(x, 512)
+    # Reducir el número de bloques residuales o filtros
+    x = residual_block(x, 32)  # Reducido de 64 a 32
+    x = residual_block(x, 64)  # Reducido de 128 a 64
+    x = residual_block(x, 128) # Reducido de 256 a 128
+    x = residual_block(x, 256) # Reducido de 512 a 256
 
     x = GlobalAveragePooling2D()(x)
-    x = Dense(1024, activation='relu')(x)
+    x = Dense(512, activation='relu')(x)  # Reducido de 1024 a 512
     x = Dropout(0.5)(x)
     predictions = Dense(1, activation='sigmoid')(x)
     
