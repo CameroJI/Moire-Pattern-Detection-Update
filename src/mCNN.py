@@ -1,5 +1,5 @@
 from keras.models import Model # type: ignore
-from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU # type: ignore
+from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, Add, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU # type: ignore
 from keras.applications import MobileNetV2  # type: ignore
 from keras import regularizers
 
@@ -64,13 +64,21 @@ def createModel_mobileNetV2(height, width, depth):
 
     def residual_block(x, filters, kernel_size=(3, 3), strides=(1, 1)):
         shortcut = x
+        
         x = Conv2D(filters, kernel_size, strides=strides, padding='same')(x)
         x = BatchNormalization()(x)
         x = ReLU()(x)
+        
         x = Conv2D(filters, kernel_size, padding='same')(x)
         x = BatchNormalization()(x)
-        x = x + shortcut
+        
+        if shortcut.shape[-1] != filters:
+            shortcut = Conv2D(filters, (1, 1), padding='same')(shortcut)
+            shortcut = BatchNormalization()(shortcut)
+
+        x = Add()([x, shortcut])
         x = ReLU()(x)
+        
         return x
 
     x = residual_block(x, 64)
