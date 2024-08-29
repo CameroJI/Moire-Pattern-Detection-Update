@@ -7,7 +7,8 @@ from PIL import Image, ImageOps
 import random
 import tensorflow as tf
 from tensorflow import keras
-from keras.models import Dense, load_model # type: ignore
+from keras.models import load_model # type: ignore
+from keras.layers import Dense # type: ignore
 from keras.preprocessing.image import ImageDataGenerator # type: ignore
 
 from mCNN import createModel_mobileNetV2
