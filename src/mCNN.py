@@ -55,16 +55,15 @@ def createModel(height, width, depth):
 
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
 
-def createModel_mobileNetV2(height, width, depth=7):
-    input_tensor = Input(shape=(height, width, depth))
-    
-    base_model = MobileNetV2(input_shape=(height, width, depth), include_top=False, weights=None)
-    
-    x = base_model(input_tensor)
+def createModel_mobileNetV2(height, width, depth):
+    baseModel = MobileNetV2(weights='imagenet', include_top=False, input_shape=(height, width, depth))
+
+    for layer in baseModel.layers:
+        layer.trainable = False
+
+    x = baseModel.output
     x = GlobalAveragePooling2D()(x)
+    x = Dense(1024, activation='relu')(x)
+    predictions = Dense(1, activation='sigmoid')(x)
     
-    x = Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.01))(x)
-    x = Dropout(0.5)(x)
-    output_tensor = Dense(1, activation='sigmoid')(x)
-    
-    return Model(inputs=input_tensor, outputs=output_tensor)
+    return Model(inputs=baseModel.input, outputs=predictions)
