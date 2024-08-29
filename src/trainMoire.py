@@ -1,10 +1,7 @@
 import sys
 import argparse
-import time
-from os import makedirs, listdir
-from os.path import join, exists, splitext, isfile
-from PIL import Image, ImageOps
-import random
+from os import makedirs
+from os.path import exists
 import tensorflow as tf
 from tensorflow import keras
 from keras.models import load_model # type: ignore
