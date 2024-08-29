@@ -71,7 +71,7 @@ def main(args):
     class_weights = {0: 2.0, 1: 1.0}
     
     model.fit(X_train, epochs=numEpochs,
-              callbacks=[epochCheckpointCallback, batchCheckpointCallback, timingCallback], class_weights=class_weights)
+              callbacks=[epochCheckpointCallback, batchCheckpointCallback, timingCallback], class_weight=class_weights)
 
 def getModel(loadFlag, path):
     if not exists(path):
