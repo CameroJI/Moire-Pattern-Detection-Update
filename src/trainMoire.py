@@ -34,8 +34,8 @@ def main(args):
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
             
-    checkpointPathModel = f"{checkpointPath}/cp.h5"
-    checkpointPathBatch = f"{checkpointPath}/cp_checkpoint.h5"
+    checkpointPathModel = f"{checkpointPath}/cp.keras"
+    checkpointPathBatch = f"{checkpointPath}/cp_checkpoint.keras"
     
     model = getModel(loadCheckPoint, checkpointPathModel)
 
