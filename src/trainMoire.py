@@ -44,6 +44,9 @@ def main(args):
     )
     
     optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
+    
+    if not exists(checkpointPath):
+        makedirs(checkpointPath)
             
     checkpointPathModel = f"{checkpointPath}/cp.keras"
     checkpointPathBatch = f"{checkpointPath}/cp_checkpoint.keras"
