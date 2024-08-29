@@ -79,12 +79,12 @@ def getModel(loadFlag, path):
     
     if loadFlag:
         model = load_model(path)
-        for layer in model.layers:
-            layer.trainable = False
+        # for layer in model.layers:
+        #     layer.trainable = False
 
-        for layer in model.layers:
-            if isinstance(layer, Dense):
-                layer.trainable = True
+        # for layer in model.layers:
+        #     if isinstance(layer, Dense):
+        #         layer.trainable = True
     else:
         model = createModel_mobileNetV2(height=HEIGHT, width=WIDTH, depth=3)
         

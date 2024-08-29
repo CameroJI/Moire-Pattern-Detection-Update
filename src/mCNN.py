@@ -56,10 +56,10 @@ def createModel(height, width, depth):
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
 
 def createModel_mobileNetV2(height, width, depth):
-    baseModel = MobileNetV2(weights='imagenet', include_top=False, input_shape=(height, width, depth))
-
-    for layer in baseModel.layers:
-        layer.trainable = False
+    #baseModel = MobileNetV2(weights='imagenet', include_top=False, input_shape=(height, width, depth))
+    baseModel = MobileNetV2(weights=None, include_top=False, input_shape=(height, width, depth))
+    # for layer in baseModel.layers:
+    #     layer.trainable = False
 
     x = baseModel.output
     x = GlobalAveragePooling2D()(x)
