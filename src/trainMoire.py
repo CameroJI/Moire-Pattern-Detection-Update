@@ -8,7 +8,7 @@ from keras.models import load_model # type: ignore
 from keras.layers import Dense # type: ignore
 from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
 from mCNN import createModel_mobileNetV2
-from modelCallbacks import BatchCheckpointCallback, EpochCheckpointCallback, TimingCallback
+from modelCallbacks import BatchCheckpointCallback, EpochCheckpointCallback
 
 HEIGHT = 800
 WIDTH = 1400
@@ -46,7 +46,6 @@ def main(args):
     
     batchCheckpointCallback = BatchCheckpointCallback(batchesNumber=save_iter, path=checkpointPathBatch)
     epochCheckpointCallback = EpochCheckpointCallback(path=checkpointPathModel)
-    timingCallback = TimingCallback()
     
     datagen = ImageDataGenerator(
         rescale=1.0/255,
@@ -73,7 +72,7 @@ def main(args):
     model.fit(
         X_train, 
         epochs=numEpochs,
-        callbacks=[epochCheckpointCallback, batchCheckpointCallback, timingCallback], 
+        callbacks=[epochCheckpointCallback, batchCheckpointCallback], 
         class_weight=class_weights
         )
 
