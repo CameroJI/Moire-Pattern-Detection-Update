@@ -59,15 +59,15 @@ def main(args):
     epochCheckpointCallback = EpochCheckpointCallback(path=checkpointPathModel)
     
     datagen = ImageDataGenerator(
-        rescale=1.0/255,
-        rotation_range=20,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        shear_range=0.2,
-        zoom_range=0.2,
-        horizontal_flip=True,
-        vertical_flip=True,
-        brightness_range=[0.8, 1.2]
+        # rescale=1.0/255,
+        # rotation_range=20,
+        # width_shift_range=0.2,
+        # height_shift_range=0.2,
+        # shear_range=0.2,
+        # zoom_range=0.2,
+        # horizontal_flip=True,
+        # vertical_flip=True,
+        # brightness_range=[0.8, 1.2]
     )
 
     X_train = datagen.flow_from_directory(
@@ -78,13 +78,13 @@ def main(args):
         classes={'Ataque': 0, 'Reales': 1}
     )
     
-    class_weights = {0: 2.0, 1: 1.0}
+    # class_weights = {0: 2.0, 1: 1.0}
     
     model.fit(
         X_train, 
         epochs=numEpochs,
         callbacks=[epochCheckpointCallback, batchCheckpointCallback], 
-        class_weight=class_weights
+        # class_weight=class_weights
         )
 
 def countImg(directory):
