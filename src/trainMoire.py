@@ -121,15 +121,9 @@ def crop(image, target_height, target_width):
     return cropped_image
 
 def wavelet_transform(image, wavelet='bior2.2', level=3):
-    def _wavelet_transform(image_np):
-        coeffs = pywt.wavedec2(image_np, wavelet, level=level)
-        LL, (LH, HL, HH) = coeffs[0], coeffs[1]
-        return LL, LH, HL, HH
-    
-    image_np = image.numpy()
-    LL, LH, HL, HH = _wavelet_transform(image_np)
-    
-    return LL, LH, HL, HH
+    coeffs = pywt.wavedec2(image, wavelet, level=level)
+    LL, (LH, HL, _) = coeffs[0], coeffs[1]
+    return LL, LH, HL
 
 def resize(component, target_height, target_width):
     component_resized = tf.image.resize(component, (target_height, target_width), method='bilinear')
@@ -140,11 +134,7 @@ def preprocessImage(image):
     image = tf.image.per_image_standardization(image)
     image = tf.squeeze(image, axis=-1)
     
-    def tf_wavelet_transform(image):
-        LL, LH, HL, HH = tf.numpy_function(lambda x: wavelet_transform(x)[0], [image], [tf.float32, tf.float32, tf.float32, tf.float32])
-        return LL, LH, HL, HH
-
-    LL, LH, HL, HH = tf_wavelet_transform(image)
+    LL, LH, HL, HH = wavelet_transform(image)
     
     LL_resized = resize(LL, int(HEIGHT/8), int(WIDTH/8))
     LH_resized = resize(LH, int(HEIGHT/8), int(WIDTH/8))
