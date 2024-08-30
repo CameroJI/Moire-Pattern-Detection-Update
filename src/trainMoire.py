@@ -69,7 +69,8 @@ def main(args):
         zoom_range=0.2,
         horizontal_flip=True,
         vertical_flip=True,
-        brightness_range=[0.8, 1.2]
+        brightness_range=[0.8, 1.2],
+        preprocessing_function=
     )
 
     X_train = datagen.flow_from_directory(
@@ -99,6 +100,26 @@ def countImg(directory):
                 total_images += 1
     
     return total_images
+
+def crop_to_size(image, target_height, target_width):
+    image = tf.convert_to_tensor(image)
+    
+    original_height = tf.shape(image)[0]
+    original_width = tf.shape(image)[1]
+    
+    offset_height = (original_height - target_height) // 2
+    offset_width = (original_width - target_width) // 2
+    
+    cropped_image = image[
+        offset_height:offset_height + target_height,
+        offset_width:offset_width + target_width,
+    :]
+    
+    return cropped_image
+
+def preprocess_image(image, label):
+    image = crop_to_size(image, WIDTH, HEIGHT)
+    return image, label
 
 def getModel(loadFlag, path):
     if loadFlag:
