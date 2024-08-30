@@ -121,7 +121,7 @@ def crop_to_size(image, target_height, target_width):
 
 def wavelet_transform(image, wavelet='bior2.2', level=3):
     coeffs = pywt.wavedec2(image, wavelet, level=level)
-    LL, (LH, HL, HH) = coeffs[0], coeffs[1]
+    LL, (LH, HL, _) = coeffs[0], coeffs[1]
     return LL, LH, HL
 
 def resize_component(component, target_height, target_width):
@@ -129,13 +129,16 @@ def resize_component(component, target_height, target_width):
     return component_resized
 
 def preprocessImage(image):
-    with tf.device('/CPU:0'):  # Forzar a la CPU para operaciones de resize
+    with tf.device('/CPU:0'):
+        image = tf.image.resize(image, (1400, 800))
         image = crop_to_size(image, WIDTH, HEIGHT)
+        
         LL, LH, HL = wavelet_transform(image)
-        LL_resized = resize_component(LL, 1400, 800)
-        LH_resized = resize_component(LH, 1400, 800)
-        HL_resized = resize_component(HL, 1400, 800)
-        processed_image = tf.stack([LL_resized, LH_resized, HL_resized], axis=-1)
+        LL_resized = resize_component(LL, 800, 1400)
+        LH_resized = resize_component(LH, 800, 1400)
+        HL_resized = resize_component(HL, 800, 1400)
+        
+        processed_image = tf.concat([LL_resized, LH_resized, HL_resized], axis=-1)
     
     return processed_image
 
