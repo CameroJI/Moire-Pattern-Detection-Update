@@ -1,5 +1,5 @@
 from keras.models import Model # type: ignore
-from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, UpSampling2D, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU, Resizing # type: ignore
+from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, MaxPooling2D, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU, Resizing # type: ignore
 from keras.applications import MobileNetV2  # type: ignore
 from keras import regularizers
 import tensorflow as tf
@@ -59,95 +59,21 @@ def createModel(height, width, depth):
 def createMobileModel(height, width, depth):
     inputs = Input(shape=(height, width, depth))
     
-    # Stem network
-    x = Conv2D(64, (3, 3), strides=(2, 2), padding='same')(inputs)
-    x = BatchNormalization()(x)
-    x = ReLU()(x)
+    # Convolutional Layers
+    x = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
+    x = MaxPooling2D((2, 2))(x)
     
-    x = Conv2D(64, (3, 3), strides=(2, 2), padding='same')(x)
-    x = BatchNormalization()(x)
-    x = ReLU()(x)
-
-    # Stage 1
-    x = Conv2D(64, (3, 3), padding='same')(x)
-    x = BatchNormalization()(x)
-    x = ReLU()(x)
+    x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+    x = MaxPooling2D((2, 2))(x)
     
-    # Stage 2
-    x1 = Conv2D(32, (3, 3), padding='same')(x)
-    x1 = BatchNormalization()(x1)
-    x1 = ReLU()(x1)
+    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+    x = MaxPooling2D((2, 2))(x)
     
-    x2 = Conv2D(64, (3, 3), padding='same')(x)
-    x2 = BatchNormalization()(x2)
-    x2 = ReLU()(x2)
-    x2 = UpSampling2D(size=(2, 2))(x2)
-    
-    # Resize x2 to match x1 dimensions
-    resize_layer = Resizing(height=x1.shape[1], width=x1.shape[2])
-    x2 = resize_layer(x2)
-    
-    x = Concatenate()([x1, x2])
-    
-    # Stage 3
-    x1 = Conv2D(32, (3, 3), padding='same')(x)
-    x1 = BatchNormalization()(x1)
-    x1 = ReLU()(x1)
-    
-    x2 = Conv2D(64, (3, 3), padding='same')(x)
-    x2 = BatchNormalization()(x2)
-    x2 = ReLU()(x2)
-    x2 = UpSampling2D(size=(2, 2))(x2)
-    
-    x3 = Conv2D(128, (3, 3), padding='same')(x)
-    x3 = BatchNormalization()(x3)
-    x3 = ReLU()(x3)
-    x3 = UpSampling2D(size=(4, 4))(x3)
-    
-    # Resize x2 and x3 to match x1 dimensions
-    resize_layer2 = Resizing(height=x1.shape[1], width=x1.shape[2])
-    x2 = resize_layer2(x2)
-    
-    resize_layer3 = Resizing(height=x1.shape[1], width=x1.shape[2])
-    x3 = resize_layer3(x3)
-    
-    x = Concatenate()([x1, x2, x3])
-    
-    # Stage 4
-    x1 = Conv2D(32, (3, 3), padding='same')(x)
-    x1 = BatchNormalization()(x1)
-    x1 = ReLU()(x1)
-    
-    x2 = Conv2D(64, (3, 3), padding='same')(x)
-    x2 = BatchNormalization()(x2)
-    x2 = ReLU()(x2)
-    x2 = UpSampling2D(size=(2, 2))(x2)
-    
-    x3 = Conv2D(128, (3, 3), padding='same')(x)
-    x3 = BatchNormalization()(x3)
-    x3 = ReLU()(x3)
-    x3 = UpSampling2D(size=(4, 4))(x3)
-    
-    x4 = Conv2D(256, (3, 3), padding='same')(x)
-    x4 = BatchNormalization()(x4)
-    x4 = ReLU()(x4)
-    x4 = UpSampling2D(size=(8, 8))(x4)
-    
-    # Resize x2, x3, and x4 to match x1 dimensions
-    resize_layer4 = Resizing(height=x1.shape[1], width=x1.shape[2])
-    x2 = resize_layer4(x2)
-    
-    resize_layer5 = Resizing(height=x1.shape[1], width=x1.shape[2])
-    x3 = resize_layer5(x3)
-    
-    resize_layer6 = Resizing(height=x1.shape[1], width=x1.shape[2])
-    x4 = resize_layer6(x4)
-    
-    x = Concatenate()([x1, x2, x3, x4])
-    
-    # Global Average Pooling and Dense Layer
+    # Global Average Pooling
     x = GlobalAveragePooling2D()(x)
-    x = Dense(1024, activation='relu')(x)
+    
+    # Fully Connected Layers
+    x = Dense(64, activation='relu')(x)
     x = Dense(1, activation='sigmoid')(x)
-        
+    
     return Model(inputs, x)
