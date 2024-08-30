@@ -129,17 +129,13 @@ def resize_component(component, target_height, target_width):
     return component_resized
 
 def preprocessImage(image):
-    if image.shape[-1] == 3:
-        image = tf.image.rgb_to_grayscale(image)
-    
-    LL, LH, HL = wavelet_transform(image)
-    
-    LL_resized = resize_component(LL, 1400, 800)
-    LH_resized = resize_component(LH, 1400, 800)
-    HL_resized = resize_component(HL, 1400, 800)
-    
-    processed_image = tf.stack([LL_resized, LH_resized, HL_resized], axis=-1)
-    processed_image = tf.image.resize(processed_image, (1400, 800))
+    with tf.device('/CPU:0'):  # Forzar a la CPU para operaciones de resize
+        image = crop_to_size(image, WIDTH, HEIGHT)
+        LL, LH, HL = wavelet_transform(image)
+        LL_resized = resize_component(LL, 1400, 800)
+        LH_resized = resize_component(LH, 1400, 800)
+        HL_resized = resize_component(HL, 1400, 800)
+        processed_image = tf.stack([LL_resized, LH_resized, HL_resized], axis=-1)
     
     return processed_image
 
