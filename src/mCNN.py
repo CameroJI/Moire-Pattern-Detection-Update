@@ -1,5 +1,5 @@
 from keras.models import Model # type: ignore
-from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, MaxPooling2D, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU, DepthwiseConv2D # type: ignore
+from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, UpSampling2D, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU, Add # type: ignore
 from keras.applications import MobileNetV2  # type: ignore
 from keras import regularizers
 
@@ -55,48 +55,81 @@ def createModel(height, width, depth):
 
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
 
+def bottleneck_block(x, filters, strides=(1, 1), downsample=False):
+    shortcut = x
+
+    x = Conv2D(filters, (1, 1), strides=strides, padding='same')(x)
+    x = BatchNormalization()(x)
+    x = ReLU()(x)
+    
+    x = Conv2D(filters, (3, 3), padding='same')(x)
+    x = BatchNormalization()(x)
+    x = ReLU()(x)
+    
+    x = Conv2D(filters * 4, (1, 1), padding='same')(x)
+    x = BatchNormalization()(x)
+    
+    if downsample or x.shape[-1] != shortcut.shape[-1]:
+        shortcut = Conv2D(filters * 4, (1, 1), strides=strides, padding='same')(shortcut)
+        shortcut = BatchNormalization()(shortcut)
+
+    x = Add()([x, shortcut])
+    x = ReLU()(x)
+    
+    return x
+
+def hrnet_block(x, filters, blocks, strides=(1, 1)):
+    for _ in range(blocks):
+        x = bottleneck_block(x, filters, strides)
+    return x
+
 def createMobileModel(height, width, depth):
     inputs = Input(shape=(height, width, depth))
-
-    # Primera capa convolucional con una pequeña escala
-    x = Conv2D(32, (3, 3), padding='same')(inputs)
+    
+    # Stem network
+    x = Conv2D(64, (3, 3), strides=(2, 2), padding='same')(inputs)
     x = BatchNormalization()(x)
     x = ReLU()(x)
     
-    # Segunda capa convolucional con una escala más grande
-    x = Conv2D(64, (5, 5), padding='same')(x)
-    x = BatchNormalization()(x)
-    x = ReLU()(x)
-    
-    # MaxPooling para reducir la dimensionalidad
-    x = MaxPooling2D((2, 2))(x)
-    
-    # Tercera capa convolucional para captar más detalles
-    x = Conv2D(128, (3, 3), padding='same')(x)
-    x = BatchNormalization()(x)
-    x = ReLU()(x)
-    
-    # Cuarta capa convolucional para captar detalles más finos
-    x = Conv2D(256, (3, 3), padding='same')(x)
-    x = BatchNormalization()(x)
-    x = ReLU()(x)
-    
-    # Otra capa de MaxPooling para seguir reduciendo la dimensionalidad
-    x = MaxPooling2D((2, 2))(x)
-    
-    # Quinta capa convolucional para detalles aún más pequeños
-    x = Conv2D(512, (3, 3), padding='same')(x)
+    x = Conv2D(64, (3, 3), strides=(2, 2), padding='same')(x)
     x = BatchNormalization()(x)
     x = ReLU()(x)
 
-    # GlobalAveragePooling para reducir a un vector de características
+    # Stage 1
+    x = hrnet_block(x, 64, 4)
+    
+    # Stage 2
+    x1 = hrnet_block(x, 32, 4)
+    x2 = hrnet_block(x, 64, 4)
+    x2 = UpSampling2D(size=(2, 2))(x2)
+    
+    x = Concatenate()([x1, x2])
+    
+    # Stage 3
+    x1 = hrnet_block(x, 32, 4)
+    x2 = hrnet_block(x, 64, 4)
+    x3 = hrnet_block(x, 128, 4)
+    x2 = UpSampling2D(size=(2, 2))(x2)
+    x3 = UpSampling2D(size=(4, 4))(x3)
+    
+    x = Concatenate()([x1, x2, x3])
+    
+    # Stage 4
+    x1 = hrnet_block(x, 32, 4)
+    x2 = hrnet_block(x, 64, 4)
+    x3 = hrnet_block(x, 128, 4)
+    x4 = hrnet_block(x, 256, 4)
+    x2 = UpSampling2D(size=(2, 2))(x2)
+    x3 = UpSampling2D(size=(4, 4))(x3)
+    x4 = UpSampling2D(size=(8, 8))(x4)
+    
+    x = Concatenate()([x1, x2, x3, x4])
+    
+    # Global Average Pooling and Dense Layer
     x = GlobalAveragePooling2D()(x)
-    
-    # Capa densa con dropout para prevenir overfitting
     x = Dense(1024, activation='relu')(x)
-    x = Dropout(0.5)(x)
+    x = Dense(1, activation='sigmoid')(x)
     
-    # Capa de salida
-    predictions = Dense(1, activation='sigmoid')(x)
+    model = Model(inputs, x)
     
-    return Model(inputs=inputs, outputs=predictions)
+    return model
