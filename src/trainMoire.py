@@ -1,5 +1,7 @@
 import sys
 import argparse
+import pywt
+import numpy as np
 from os import makedirs, walk
 from os.path import exists
 import tensorflow as tf
@@ -117,9 +119,28 @@ def crop_to_size(image, target_height, target_width):
     
     return cropped_image
 
-def preprocessImage(image, label):
-    image = crop_to_size(image, WIDTH, HEIGHT)
-    return image, label
+def wavelet_transform(image, wavelet='bior2.2', level=3):
+    coeffs = pywt.wavedec2(image, wavelet, level=level)
+    LL, (LH, HL, HH) = coeffs[0], coeffs[1]
+    return LL, LH, HL
+
+def resize_component(component, target_height, target_width):
+    component_resized = tf.image.resize(component, (target_height, target_width), method='bilinear')
+    return component_resized
+
+def preprocessImage(image):
+    if image.shape[-1] == 3:
+        image = tf.image.rgb_to_grayscale(image)
+    
+    LL, LH, HL = wavelet_transform(image)
+    
+    LL_resized = resize_component(LL, 1400, 800)
+    LH_resized = resize_component(LH, 1400, 800)
+    HL_resized = resize_component(HL, 1400, 800)
+    
+    processed_image = tf.stack([LL_resized, LH_resized, HL_resized], axis=-1)
+    
+    return processed_image
 
 def getModel(loadFlag, path):
     if loadFlag:
