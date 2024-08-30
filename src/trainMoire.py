@@ -32,6 +32,8 @@ def main(args):
     WIDTH = args.width
     image_size = (HEIGHT, WIDTH)
     
+    print('Image sie: ', image_size)
+    
     initial_learning_rate = args.learning_rate
     final_learning_rate = 1e-5
     decay_steps = countImg(datasetPath) // batch_size
