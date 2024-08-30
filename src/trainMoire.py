@@ -129,7 +129,6 @@ def resize(component, target_height, target_width):
     return component_resized
 
 def preprocessImage(image):
-   def preprocessImage(image):
     with tf.device('/CPU:0'):
         # Convertir la imagen a escala de grises
         image = tf.image.rgb_to_grayscale(image)
