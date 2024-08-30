@@ -1,5 +1,5 @@
 from keras.models import Model # type: ignore
-from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, UpSampling2D, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU, Add # type: ignore
+from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, UpSampling2D, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU, Add, Cropping2D # type: ignore
 from keras.applications import MobileNetV2  # type: ignore
 from keras import regularizers
 
@@ -102,6 +102,7 @@ def createMobileModel(height, width, depth):
     x1 = hrnet_block(x, 32, 4)
     x2 = hrnet_block(x, 64, 4)
     x2 = UpSampling2D(size=(2, 2))(x2)
+    x2 = Cropping2D(cropping=((0, 1), (0, 1)))(x2)  # Crop to match x1 size
     
     x = Concatenate()([x1, x2])
     
@@ -110,7 +111,9 @@ def createMobileModel(height, width, depth):
     x2 = hrnet_block(x, 64, 4)
     x3 = hrnet_block(x, 128, 4)
     x2 = UpSampling2D(size=(2, 2))(x2)
+    x2 = Cropping2D(cropping=((0, 1), (0, 1)))(x2)  # Crop to match x1 size
     x3 = UpSampling2D(size=(4, 4))(x3)
+    x3 = Cropping2D(cropping=((0, 2), (0, 2)))(x3)  # Crop to match x1 size
     
     x = Concatenate()([x1, x2, x3])
     
@@ -120,8 +123,11 @@ def createMobileModel(height, width, depth):
     x3 = hrnet_block(x, 128, 4)
     x4 = hrnet_block(x, 256, 4)
     x2 = UpSampling2D(size=(2, 2))(x2)
+    x2 = Cropping2D(cropping=((0, 1), (0, 1)))(x2)  # Crop to match x1 size
     x3 = UpSampling2D(size=(4, 4))(x3)
+    x3 = Cropping2D(cropping=((0, 2), (0, 2)))(x3)  # Crop to match x1 size
     x4 = UpSampling2D(size=(8, 8))(x4)
+    x4 = Cropping2D(cropping=((0, 4), (0, 4)))(x4)  # Crop to match x1 size
     
     x = Concatenate()([x1, x2, x3, x4])
     
