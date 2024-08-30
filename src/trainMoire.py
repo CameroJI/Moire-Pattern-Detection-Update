@@ -129,30 +129,28 @@ def resize(component, target_height, target_width):
     return component_resized
 
 def preprocessImage(image):
+   def preprocessImage(image):
     with tf.device('/CPU:0'):
+        # Convertir la imagen a escala de grises
         image = tf.image.rgb_to_grayscale(image)
+        
+        # Eliminar la dimensión del canal de escala de grises para obtener un tensor 2D
         image = tf.squeeze(image, axis=-1)
         
-        print('image shape: ', image.shape)
-        
-        image = tf.image.resize(image, (1400, 800))
-        image = crop(image, WIDTH, HEIGHT)
-        
+        # Crear los wavelets primero
         LL, LH, HL = wavelet_transform(image)
         
         print('LL Shape: ', LL.shape)
         print('LH Shape: ', LH.shape)
         print('HL Shape: ', HL.shape)
         
-        LL_resized = resize(LL, 800, 1400)
-        LH_resized = resize(LH, 800, 1400)
-        HL_resized = resize(HL, 800, 1400)
+        # Concatenar los wavelets en un tensor de 3 canales
+        wavelet_tensor = tf.stack([LL, LH, HL], axis=-1)
         
-        print('LL_resized Shape: ', LL_resized.shape)
-        print('LH_resized Shape: ', LH_resized.shape)
-        print('HL_resized Shape: ', HL_resized.shape)
+        print('wavelet tensor Shape: ', wavelet_tensor.shape)
         
-        processed_image = tf.concat([LL_resized, LH_resized, HL_resized], axis=-1)
+        # Redimensionar el tensor resultante
+        processed_image = tf.image.resize(wavelet_tensor, (1400, 800), method='bilinear')
         
         print('processed image Shape: ', processed_image.shape)
     
