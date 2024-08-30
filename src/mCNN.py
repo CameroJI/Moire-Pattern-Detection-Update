@@ -102,7 +102,9 @@ def createMobileModel(height, width, depth):
     x1 = hrnet_block(x, 32, 4)
     x2 = hrnet_block(x, 64, 4)
     x2 = UpSampling2D(size=(2, 2))(x2)
-    x2 = Cropping2D(cropping=((0, 1), (0, 1)))(x2)  # Crop to match x1 size
+    
+    # Ensure x2 matches x1 dimensions
+    x2 = Cropping2D(cropping=((0, x1.shape[1] - x2.shape[1]), (0, x1.shape[2] - x2.shape[2])))(x2)
     
     x = Concatenate()([x1, x2])
     
@@ -110,10 +112,13 @@ def createMobileModel(height, width, depth):
     x1 = hrnet_block(x, 32, 4)
     x2 = hrnet_block(x, 64, 4)
     x3 = hrnet_block(x, 128, 4)
+    
+    # Ensure x2 and x3 match x1 dimensions
     x2 = UpSampling2D(size=(2, 2))(x2)
-    x2 = Cropping2D(cropping=((0, 1), (0, 1)))(x2)  # Crop to match x1 size
+    x2 = Cropping2D(cropping=((0, x1.shape[1] - x2.shape[1]), (0, x1.shape[2] - x2.shape[2])))(x2)
+    
     x3 = UpSampling2D(size=(4, 4))(x3)
-    x3 = Cropping2D(cropping=((0, 2), (0, 2)))(x3)  # Crop to match x1 size
+    x3 = Cropping2D(cropping=((0, x1.shape[1] - x3.shape[1]), (0, x1.shape[2] - x3.shape[2])))(x3)
     
     x = Concatenate()([x1, x2, x3])
     
@@ -122,12 +127,16 @@ def createMobileModel(height, width, depth):
     x2 = hrnet_block(x, 64, 4)
     x3 = hrnet_block(x, 128, 4)
     x4 = hrnet_block(x, 256, 4)
+    
+    # Ensure x2, x3, and x4 match x1 dimensions
     x2 = UpSampling2D(size=(2, 2))(x2)
-    x2 = Cropping2D(cropping=((0, 1), (0, 1)))(x2)  # Crop to match x1 size
+    x2 = Cropping2D(cropping=((0, x1.shape[1] - x2.shape[1]), (0, x1.shape[2] - x2.shape[2])))(x2)
+    
     x3 = UpSampling2D(size=(4, 4))(x3)
-    x3 = Cropping2D(cropping=((0, 2), (0, 2)))(x3)  # Crop to match x1 size
+    x3 = Cropping2D(cropping=((0, x1.shape[1] - x3.shape[1]), (0, x1.shape[2] - x3.shape[2])))(x3)
+    
     x4 = UpSampling2D(size=(8, 8))(x4)
-    x4 = Cropping2D(cropping=((0, 4), (0, 4)))(x4)  # Crop to match x1 size
+    x4 = Cropping2D(cropping=((0, x1.shape[1] - x4.shape[1]), (0, x1.shape[2] - x4.shape[2])))(x4)
     
     x = Concatenate()([x1, x2, x3, x4])
     
