@@ -70,7 +70,7 @@ def main(args):
         horizontal_flip=True,
         vertical_flip=True,
         brightness_range=[0.8, 1.2],
-        preprocessing_function=
+        preprocessing_function=preprocessImage
     )
 
     X_train = datagen.flow_from_directory(
@@ -81,7 +81,7 @@ def main(args):
         classes={'Ataque': 0, 'Reales': 1}
     )
     
-    class_weights = {0: 2.0, 1: 1.0}
+    class_weights = {0: 1.2, 1: 1.0}
     
     model.fit(
         X_train, 
@@ -117,7 +117,7 @@ def crop_to_size(image, target_height, target_width):
     
     return cropped_image
 
-def preprocess_image(image, label):
+def preprocessImage(image, label):
     image = crop_to_size(image, WIDTH, HEIGHT)
     return image, label
 
