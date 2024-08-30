@@ -2,6 +2,7 @@ from keras.models import Model # type: ignore
 from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, UpSampling2D, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU, Add, Cropping2D # type: ignore
 from keras.applications import MobileNetV2  # type: ignore
 from keras import regularizers
+import tensorflow as tf
 
 def createModel(height, width, depth):
     kernel_size_small = 3
@@ -83,6 +84,9 @@ def hrnet_block(x, filters, blocks, strides=(1, 1)):
         x = bottleneck_block(x, filters, strides)
     return x
 
+def resize_like(tensor, size):
+    return tf.image.resize(tensor, size, method='bilinear')
+
 def createMobileModel(height, width, depth):
     inputs = Input(shape=(height, width, depth))
     
@@ -103,8 +107,8 @@ def createMobileModel(height, width, depth):
     x2 = hrnet_block(x, 64, 4)
     x2 = UpSampling2D(size=(2, 2))(x2)
     
-    # Ensure x2 matches x1 dimensions
-    x2 = Cropping2D(cropping=((0, x1.shape[1] - x2.shape[1]), (0, x1.shape[2] - x2.shape[2])))(x2)
+    # Resize x2 to match x1 dimensions
+    x2 = resize_like(x2, (x1.shape[1], x1.shape[2]))
     
     x = Concatenate()([x1, x2])
     
@@ -113,12 +117,12 @@ def createMobileModel(height, width, depth):
     x2 = hrnet_block(x, 64, 4)
     x3 = hrnet_block(x, 128, 4)
     
-    # Ensure x2 and x3 match x1 dimensions
+    # Resize x2 and x3 to match x1 dimensions
     x2 = UpSampling2D(size=(2, 2))(x2)
-    x2 = Cropping2D(cropping=((0, x1.shape[1] - x2.shape[1]), (0, x1.shape[2] - x2.shape[2])))(x2)
+    x2 = resize_like(x2, (x1.shape[1], x1.shape[2]))
     
     x3 = UpSampling2D(size=(4, 4))(x3)
-    x3 = Cropping2D(cropping=((0, x1.shape[1] - x3.shape[1]), (0, x1.shape[2] - x3.shape[2])))(x3)
+    x3 = resize_like(x3, (x1.shape[1], x1.shape[2]))
     
     x = Concatenate()([x1, x2, x3])
     
@@ -128,15 +132,15 @@ def createMobileModel(height, width, depth):
     x3 = hrnet_block(x, 128, 4)
     x4 = hrnet_block(x, 256, 4)
     
-    # Ensure x2, x3, and x4 match x1 dimensions
+    # Resize x2, x3, and x4 to match x1 dimensions
     x2 = UpSampling2D(size=(2, 2))(x2)
-    x2 = Cropping2D(cropping=((0, x1.shape[1] - x2.shape[1]), (0, x1.shape[2] - x2.shape[2])))(x2)
+    x2 = resize_like(x2, (x1.shape[1], x1.shape[2]))
     
     x3 = UpSampling2D(size=(4, 4))(x3)
-    x3 = Cropping2D(cropping=((0, x1.shape[1] - x3.shape[1]), (0, x1.shape[2] - x3.shape[2])))(x3)
+    x3 = resize_like(x3, (x1.shape[1], x1.shape[2]))
     
     x4 = UpSampling2D(size=(8, 8))(x4)
-    x4 = Cropping2D(cropping=((0, x1.shape[1] - x4.shape[1]), (0, x1.shape[2] - x4.shape[2])))(x4)
+    x4 = resize_like(x4, (x1.shape[1], x1.shape[2]))
     
     x = Concatenate()([x1, x2, x3, x4])
     
