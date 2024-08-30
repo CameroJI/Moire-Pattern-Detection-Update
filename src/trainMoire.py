@@ -129,6 +129,9 @@ def resize(component, target_height, target_width):
     return component_resized
 
 def preprocessImage(image):
+    
+    print(image.shape)
+    
     with tf.device('/CPU:0'):
         image = tf.image.resize(image, (1400, 800))
         image = crop(image, WIDTH, HEIGHT)
