@@ -115,7 +115,7 @@ def crop_to_size(image, target_height, target_width):
     cropped_image = image[
         offset_height:offset_height + target_height,
         offset_width:offset_width + target_width,
-    :]
+    ]
     
     return cropped_image
 
@@ -139,6 +139,7 @@ def preprocessImage(image):
     HL_resized = resize_component(HL, 1400, 800)
     
     processed_image = tf.stack([LL_resized, LH_resized, HL_resized], axis=-1)
+    processed_image = tf.image.resize(processed_image, (1400, 800))
     
     return processed_image
 
