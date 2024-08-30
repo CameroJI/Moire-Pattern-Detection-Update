@@ -61,19 +61,6 @@ def main(args):
     
     batchCheckpointCallback = BatchCheckpointCallback(batchesNumber=save_iter, path=checkpointPathBatch)
     epochCheckpointCallback = EpochCheckpointCallback(path=checkpointPathModel)
-    
-    datagen = ImageDataGenerator(
-        rescale=1.0/255,
-        rotation_range=20,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        shear_range=0.2,
-        zoom_range=0.2,
-        horizontal_flip=True,
-        vertical_flip=True,
-        brightness_range=[0.65, 1.35],
-        preprocessing_function=preprocessImage
-    )
 
     X_train = CustomImageDataGenerator(
         directory=datasetPath,
@@ -126,7 +113,7 @@ def wavelet_transform(image, wavelet='bior2.2', level=3):
     return LL, LH, HL, HH
 
 def resize(component, target_height, target_width):
-    component_resized = tf.image.resize(component, (target_height, target_width), method='bilinear')
+    component_resized = tf.image.resize(component, (int(target_height), int(target_width)), method='bilinear')
     return component_resized
 
 def preprocessImage(image):
@@ -141,10 +128,10 @@ def preprocessImage(image):
     HL_tensor = np.expand_dims(HL, axis=-1)
     HH_tensor = np.expand_dims(HH, axis=-1)
     
-    LL_resized = resize(LL_tensor, int(HEIGHT/8), int(WIDTH/8))
-    LH_resized = resize(LH_tensor, int(HEIGHT/8), int(WIDTH/8))
-    HL_resized = resize(HL_tensor, int(HEIGHT/8), int(WIDTH/8))
-    HH_resized = resize(HH_tensor, int(HEIGHT/8), int(WIDTH/8))
+    LL_resized = resize(LL_tensor, HEIGHT/8, WIDTH/8)
+    LH_resized = resize(LH_tensor, HEIGHT/8, WIDTH/8)
+    HL_resized = resize(HL_tensor, HEIGHT/8, WIDTH/8)
+    HH_resized = resize(HH_tensor, HEIGHT/8, WIDTH/8)
      
     return {
         'LL_Input': LL_resized,
