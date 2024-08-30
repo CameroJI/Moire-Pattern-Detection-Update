@@ -1,5 +1,5 @@
 from keras.models import Model # type: ignore
-from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, UpSampling2D, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU, Add, Cropping2D # type: ignore
+from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, UpSampling2D, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU, Resizing # type: ignore
 from keras.applications import MobileNetV2  # type: ignore
 from keras import regularizers
 import tensorflow as tf
@@ -83,7 +83,10 @@ def createMobileModel(height, width, depth):
     x2 = ReLU()(x2)
     x2 = UpSampling2D(size=(2, 2))(x2)
     
-    x2 = tf.image.resize(x2, (x1.shape[1], x1.shape[2]))  # Resize x2 to match x1 dimensions
+    # Resize x2 to match x1 dimensions
+    resize_layer = Resizing(height=x1.shape[1], width=x1.shape[2])
+    x2 = resize_layer(x2)
+    
     x = Concatenate()([x1, x2])
     
     # Stage 3
@@ -101,8 +104,12 @@ def createMobileModel(height, width, depth):
     x3 = ReLU()(x3)
     x3 = UpSampling2D(size=(4, 4))(x3)
     
-    x2 = tf.image.resize(x2, (x1.shape[1], x1.shape[2]))
-    x3 = tf.image.resize(x3, (x1.shape[1], x1.shape[2]))
+    # Resize x2 and x3 to match x1 dimensions
+    resize_layer2 = Resizing(height=x1.shape[1], width=x1.shape[2])
+    x2 = resize_layer2(x2)
+    
+    resize_layer3 = Resizing(height=x1.shape[1], width=x1.shape[2])
+    x3 = resize_layer3(x3)
     
     x = Concatenate()([x1, x2, x3])
     
@@ -126,9 +133,15 @@ def createMobileModel(height, width, depth):
     x4 = ReLU()(x4)
     x4 = UpSampling2D(size=(8, 8))(x4)
     
-    x2 = tf.image.resize(x2, (x1.shape[1], x1.shape[2]))
-    x3 = tf.image.resize(x3, (x1.shape[1], x1.shape[2]))
-    x4 = tf.image.resize(x4, (x1.shape[1], x1.shape[2]))
+    # Resize x2, x3, and x4 to match x1 dimensions
+    resize_layer4 = Resizing(height=x1.shape[1], width=x1.shape[2])
+    x2 = resize_layer4(x2)
+    
+    resize_layer5 = Resizing(height=x1.shape[1], width=x1.shape[2])
+    x3 = resize_layer5(x3)
+    
+    resize_layer6 = Resizing(height=x1.shape[1], width=x1.shape[2])
+    x4 = resize_layer6(x4)
     
     x = Concatenate()([x1, x2, x3, x4])
     
@@ -136,7 +149,5 @@ def createMobileModel(height, width, depth):
     x = GlobalAveragePooling2D()(x)
     x = Dense(1024, activation='relu')(x)
     x = Dense(1, activation='sigmoid')(x)
-    
-    model = Model(inputs, x)
-    
-    return model
+        
+    return Model(inputs, x)
