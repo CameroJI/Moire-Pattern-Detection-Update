@@ -103,7 +103,7 @@ def countImg(directory):
     
     return total_images
 
-def crop_to_size(image, target_height, target_width):
+def crop(image, target_height, target_width):
     image = tf.convert_to_tensor(image)
     
     original_height = tf.shape(image)[0]
@@ -124,21 +124,27 @@ def wavelet_transform(image, wavelet='bior2.2', level=3):
     LL, (LH, HL, _) = coeffs[0], coeffs[1]
     return LL, LH, HL
 
-def resize_component(component, target_height, target_width):
+def resize(component, target_height, target_width):
     component_resized = tf.image.resize(component, (target_height, target_width), method='bilinear')
     return component_resized
 
 def preprocessImage(image):
     with tf.device('/CPU:0'):
         image = tf.image.resize(image, (1400, 800))
-        image = crop_to_size(image, WIDTH, HEIGHT)
+        image = crop(image, WIDTH, HEIGHT)
         
         LL, LH, HL = wavelet_transform(image)
-        LL_resized = resize_component(LL, 800, 1400)
-        LH_resized = resize_component(LH, 800, 1400)
-        HL_resized = resize_component(HL, 800, 1400)
+        LL_resized = resize(LL, 800, 1400)
+        LH_resized = resize(LH, 800, 1400)
+        HL_resized = resize(HL, 800, 1400)
+        
+        print('LL Shape: ', LL_resized.shape)
+        print('LH Shape: ', LH_resized.shape)
+        print('HL Shape: ', HL_resized.shape)
         
         processed_image = tf.concat([LL_resized, LH_resized, HL_resized], axis=-1)
+        
+        print('processed image Shape: ', processed_image.shape)
     
     return processed_image
 
