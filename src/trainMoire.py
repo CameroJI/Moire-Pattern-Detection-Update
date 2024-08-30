@@ -136,15 +136,21 @@ def preprocessImage(image):
     
     LL, LH, HL, HH = wavelet_transform(image)
     
-    wavelet_tensor = tf.stack([LL, HH, HL, HH], axis=-1)
+    LL_tensor = np.expand_dims(LL, axis=-1)
+    LH_tensor = np.expand_dims(LH, axis=-1)
+    HL_tensor = np.expand_dims(HL, axis=-1)
+    HH_tensor = np.expand_dims(HH, axis=-1)
     
-    wavelet_tensor = resize(wavelet_tensor, int(HEIGHT/8), int(WIDTH/8))   
+    LL_resized = resize(LL_tensor, int(HEIGHT/8), int(WIDTH/8))
+    LH_resized = resize(LH_tensor, int(HEIGHT/8), int(WIDTH/8))
+    HL_resized = resize(HL_tensor, int(HEIGHT/8), int(WIDTH/8))
+    HH_resized = resize(HH_tensor, int(HEIGHT/8), int(WIDTH/8))
      
     return {
-        'LL_Input': LL,
-        'LH_Input': LH,
-        'HL_Input': HL,
-        'HH_Input': HH
+        'LL_Input': LL_resized,
+        'LH_Input': LH_resized,
+        'HL_Input': HL_resized,
+        'HH_Input': HH_resized
     }
 
 def getModel(loadFlag, path):
