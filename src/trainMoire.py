@@ -1,6 +1,7 @@
 import sys
 import argparse
 import pywt
+import cv2
 import numpy as np
 from os import makedirs, walk
 from os.path import exists
@@ -119,6 +120,18 @@ def crop(image, target_height, target_width):
     
     return cropped_image
 
+def equalize_histogram(image):
+    image_np = image.numpy()
+    if len(image_np.shape) == 3 and image_np.shape[2] == 1:
+        image_np = np.squeeze(image_np, axis=-1)
+
+    image_eq_np = cv2.equalizeHist(image_np)
+
+    image_eq = tf.convert_to_tensor(image_eq_np, dtype=tf.float32)
+    image_eq = tf.expand_dims(image_eq, axis=-1)
+
+    return image_eq
+
 def wavelet_transform(image, wavelet='bior2.2', level=3):
     coeffs = pywt.wavedec2(image, wavelet, level=level)
     LL, (LH, HL, _) = coeffs[0], coeffs[1]
@@ -128,17 +141,17 @@ def resize(component, target_height, target_width):
     component_resized = tf.image.resize(component, (target_height, target_width), method='bilinear')
     return component_resized
 
+@tf.function
 def preprocessImage(image):
-    with tf.device('/CPU:0'):
-        image = tf.image.rgb_to_grayscale(image)
-        image = tf.image.equalize_hist(image)  # Normalización de histograma
-        image = tf.squeeze(image, axis=-1)
+    image = tf.image.rgb_to_grayscale(image)
+    image = tf.cast(image, tf.float32) / 255.0
+    image = tf.numpy_function(equalize_histogram, [image], tf.float32)
+    
+    LL, LH, HL = wavelet_transform(image)
         
-        LL, LH, HL = wavelet_transform(image)
-        
-        wavelet_tensor = tf.stack([LL, LH, HL], axis=-1)
-        processed_image = tf.image.resize(wavelet_tensor, (HEIGHT, WIDTH), method='bilinear')
-            
+    wavelet_tensor = tf.stack([LL, LH, HL], axis=-1)
+    processed_image = tf.image.resize(wavelet_tensor, (HEIGHT, WIDTH), method='bilinear')
+    
     return processed_image
 
 def getModel(loadFlag, path):
