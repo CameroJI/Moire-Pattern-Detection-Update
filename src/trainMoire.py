@@ -34,17 +34,16 @@ def main(args):
         
     initial_learning_rate = args.learning_rate
     final_learning_rate = 1e-5
-    decay_steps = countImg(datasetPath) // batch_size
-    decay_rate = (final_learning_rate / initial_learning_rate) ** (1 / decay_steps)
-  
-    # lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-    #     initial_learning_rate=initial_learning_rate,
-    #     decay_steps=decay_steps,
-    #     decay_rate=decay_rate,
-    #     staircase=True
-    # )
-    
-    optimizer = tf.keras.optimizers.Adam(learning_rate=initial_learning_rate)
+    total_steps = countImg(datasetPath) // batch_size * numEpochs
+
+    lr_schedule = tf.keras.optimizers.schedules.LearningRateSchedule(
+        lambda step: tf.maximum(
+            initial_learning_rate - (initial_learning_rate - final_learning_rate) * (step / total_steps),
+            final_learning_rate
+        )
+    )
+
+    optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
     
     if not exists(checkpointPath):
         makedirs(checkpointPath)
