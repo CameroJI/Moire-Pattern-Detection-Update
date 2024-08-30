@@ -134,13 +134,18 @@ def preprocessImage(image):
         image = crop(image, WIDTH, HEIGHT)
         
         LL, LH, HL = wavelet_transform(image)
+        
+        print('LL Shape: ', LL.shape)
+        print('LH Shape: ', LH.shape)
+        print('HL Shape: ', HL.shape)
+        
         LL_resized = resize(LL, 800, 1400)
         LH_resized = resize(LH, 800, 1400)
         HL_resized = resize(HL, 800, 1400)
         
-        print('LL Shape: ', LL_resized.shape)
-        print('LH Shape: ', LH_resized.shape)
-        print('HL Shape: ', HL_resized.shape)
+        print('LL_resized Shape: ', LL_resized.shape)
+        print('LH_resized Shape: ', LH_resized.shape)
+        print('HL_resized Shape: ', HL_resized.shape)
         
         processed_image = tf.concat([LL_resized, LH_resized, HL_resized], axis=-1)
         
