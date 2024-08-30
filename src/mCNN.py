@@ -57,11 +57,10 @@ def createModel(height, width, depth):
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
 
 def createMobileModel(height, width, depth):
-    # Cargar DenseNet121 preentrenado sin la capa final
     base_model = DenseNet121(
         weights='imagenet',
         include_top=False,
-        input_shape=(height, width, 3)
+        input_shape=(height, width, depth)
     )
 
     for layer in base_model.layers:
