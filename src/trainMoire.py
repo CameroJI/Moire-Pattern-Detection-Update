@@ -122,8 +122,8 @@ def crop(image, target_height, target_width):
 
 def wavelet_transform(image, wavelet='bior2.2', level=3):
     coeffs = pywt.wavedec2(image, wavelet, level=level)
-    LL, (LH, HL, _) = coeffs[0], coeffs[1]
-    return LL, LH, HL
+    LL, (LH, HL, HH) = coeffs[0], coeffs[1]
+    return LL, LH, HL, HH
 
 def resize(component, target_height, target_width):
     component_resized = tf.image.resize(component, (target_height, target_width), method='bilinear')
