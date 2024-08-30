@@ -117,9 +117,15 @@ def resize(component, target_height, target_width):
     return component_resized
 
 def preprocessImage(image):
+    image = tf.image.random_flip_left_right(image)
+    image = tf.image.random_flip_up_down(image)
+    image = tf.image.random_brightness(image, max_delta=0.3)
+    image = tf.image.random_contrast(image, lower=0.65, upper=1.35)
+    
     image = tf.image.rgb_to_grayscale(image)
     image = tf.image.per_image_standardization(image)
     image = tf.squeeze(image, axis=-1)
+    image = crop(image, HEIGHT, WIDTH)
     
     LL, LH, HL, HH = wavelet_transform(image)
     
