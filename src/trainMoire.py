@@ -10,7 +10,7 @@ from keras.models import load_model # type: ignore
 from keras.layers import Dense # type: ignore
 from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
 from mCNN import createMobileModel
-from modelCallbacks import BatchCheckpointCallback, EpochCheckpointCallback
+from modelCallbacks import BatchCheckpointCallback, EpochCheckpointCallback, CustomImageDataGenerator
 
 HEIGHT = 800
 WIDTH = 1400
@@ -75,10 +75,11 @@ def main(args):
         preprocessing_function=preprocessImage
     )
 
-    X_train = datagen.flow_from_directory(
+    X_train = CustomImageDataGenerator(
         directory=datasetPath,
-        target_size=image_size,
         batch_size=batch_size,
+        image_size=(HEIGHT, WIDTH),
+        preprocess_function=preprocessImage,
         class_mode='binary',
         classes={'Ataque': 0, 'Reales': 1}
     )
@@ -120,26 +121,39 @@ def crop(image, target_height, target_width):
     return cropped_image
 
 def wavelet_transform(image, wavelet='bior2.2', level=3):
-    coeffs = pywt.wavedec2(image, wavelet, level=level)
-    LL, (LH, HL, _) = coeffs[0], coeffs[1]
-    return LL, LH, HL
+    def _wavelet_transform(image_np):
+        coeffs = pywt.wavedec2(image_np, wavelet, level=level)
+        LL, (LH, HL, HH) = coeffs[0], coeffs[1]
+        return LL, LH, HL, HH
+    
+    image_np = image.numpy()
+    LL, LH, HL, HH = _wavelet_transform(image_np)
+    
+    return LL, LH, HL, HH
 
 def resize(component, target_height, target_width):
     component_resized = tf.image.resize(component, (target_height, target_width), method='bilinear')
     return component_resized
 
 def preprocessImage(image):
-    with tf.device('/CPU:0'):
-        image = tf.image.rgb_to_grayscale(image)
-        image = tf.image.per_image_standardization(image)
-        image = tf.squeeze(image, axis=-1)
-        
-        LL, LH, HL = wavelet_transform(image)
-        
-        wavelet_tensor = tf.stack([LL, LH, HL], axis=-1)
-        processed_image = tf.image.resize(wavelet_tensor, (HEIGHT, WIDTH), method='bilinear')
-            
-    return processed_image
+    image = tf.image.rgb_to_grayscale(image)
+    image = tf.image.per_image_standardization(image)
+    image = tf.squeeze(image, axis=-1)
+    
+    def tf_wavelet_transform(image):
+        LL, LH, HL, HH = tf.numpy_function(lambda x: wavelet_transform(x)[0], [image], [tf.float32, tf.float32, tf.float32, tf.float32])
+        return LL, LH, HL, HH
+
+    LL, LH, HL, HH = tf_wavelet_transform(image)
+    
+    LL_resized = resize(LL, HEIGHT, WIDTH)
+    LH_resized = resize(LH, HEIGHT, WIDTH)
+    HL_resized = resize(HL, HEIGHT, WIDTH)
+    HH_resized = resize(HH, HEIGHT, WIDTH)
+    
+    wavelet_tensor = tf.stack([LL_resized, LH_resized, HL_resized, HH_resized], axis=-1)
+    
+    return wavelet_tensor
 
 def getModel(loadFlag, path):
     if loadFlag:
@@ -151,7 +165,7 @@ def getModel(loadFlag, path):
         #     if isinstance(layer, Dense):
         #         layer.trainable = True
     else:
-        model = createMobileModel(height=HEIGHT, width=WIDTH, depth=3)
+        model = createMobileModel(height=HEIGHT, width=WIDTH, depth=1)
         
     return model
 

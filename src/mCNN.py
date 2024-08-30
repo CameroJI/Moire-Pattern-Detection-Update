@@ -57,18 +57,43 @@ def createModel(height, width, depth):
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
 
 def createMobileModel(height, width, depth):
-    base_model = DenseNet121(
-        weights='imagenet',
-        include_top=False,
-        input_shape=(height, width, depth)
-    )
+    input_LL = Input(shape=(height, width, depth), name='LL_Input')
+    input_HL = Input(shape=(height, width, depth), name='HL_Input')
+    input_LH = Input(shape=(height, width, depth), name='LH_Input')
+    input_HH = Input(shape=(height, width, depth), name='HH_Input')
 
-    for layer in base_model.layers:
-        layer.trainable = False
+    # Procesamiento del componente LL
+    x_LL = Conv2D(32, (3, 3), activation='relu', padding='same')(input_LL)
+    x_LL = MaxPooling2D((2, 2))(x_LL)
+    x_LL = Conv2D(64, (3, 3), activation='relu', padding='same')(x_LL)
+    x_LL = MaxPooling2D((2, 2))(x_LL)
+    x_LL = Flatten()(x_LL)
 
-    x = base_model.output
-    x = GlobalAveragePooling2D()(x)
-    x = Dense(1024, activation='relu')(x)
+    # Procesamiento del componente HL
+    x_HL = Conv2D(32, (3, 3), activation='relu', padding='same')(input_HL)
+    x_HL = MaxPooling2D((2, 2))(x_HL)
+    x_HL = Conv2D(64, (3, 3), activation='relu', padding='same')(x_HL)
+    x_HL = MaxPooling2D((2, 2))(x_HL)
+    x_HL = Flatten()(x_HL)
+
+    # Procesamiento del componente LH
+    x_LH = Conv2D(32, (3, 3), activation='relu', padding='same')(input_LH)
+    x_LH = MaxPooling2D((2, 2))(x_LH)
+    x_LH = Conv2D(64, (3, 3), activation='relu', padding='same')(x_LH)
+    x_LH = MaxPooling2D((2, 2))(x_LH)
+    x_LH = Flatten()(x_LH)
+
+    # Procesamiento del componente HH
+    x_HH = Conv2D(32, (3, 3), activation='relu', padding='same')(input_HH)
+    x_HH = MaxPooling2D((2, 2))(x_HH)
+    x_HH = Conv2D(64, (3, 3), activation='relu', padding='same')(x_HH)
+    x_HH = MaxPooling2D((2, 2))(x_HH)
+    x_HH = Flatten()(x_HH)
+
+    # Concatenación de características
+    concatenated = Concatenate()([x_LL, x_HL, x_LH, x_HH])
+    x = Dense(128, activation='relu')(concatenated)
+    x = Dense(64, activation='relu')(x)
     predictions = Dense(1, activation='sigmoid')(x)
-    
-    return Model(inputs=base_model.input, outputs=predictions)
+
+    return Model(inputs=[input_LL, input_HL, input_LH, input_HH], outputs=predictions)
