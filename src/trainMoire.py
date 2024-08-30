@@ -36,13 +36,25 @@ def main(args):
     final_learning_rate = 1e-5
     total_steps = countImg(datasetPath) // batch_size * numEpochs
 
-    lr_schedule = tf.keras.optimizers.schedules.LearningRateSchedule(
-        lambda step: tf.maximum(
-            initial_learning_rate - (initial_learning_rate - final_learning_rate) * (step / total_steps),
-            final_learning_rate
-        )
+    # Definir una subclase personalizada para el decaimiento lineal
+    class LinearDecay(tf.keras.optimizers.schedules.LearningRateSchedule):
+        def __init__(self, initial_learning_rate, final_learning_rate, total_steps):
+            self.initial_learning_rate = initial_learning_rate
+            self.final_learning_rate = final_learning_rate
+            self.total_steps = total_steps
+
+        def __call__(self, step):
+            linear_decay = self.initial_learning_rate - (self.initial_learning_rate - self.final_learning_rate) * (step / self.total_steps)
+            return tf.maximum(linear_decay, self.final_learning_rate)
+
+    # Crear una instancia del programador de tasa de aprendizaje
+    lr_schedule = LinearDecay(
+        initial_learning_rate=initial_learning_rate,
+        final_learning_rate=final_learning_rate,
+        total_steps=total_steps
     )
 
+    # Asignar el programador de tasa de aprendizaje al optimizador Adam
     optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
     
     if not exists(checkpointPath):
