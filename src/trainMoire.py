@@ -31,9 +31,7 @@ def main(args):
     HEIGHT = args.height
     WIDTH = args.width
     image_size = (HEIGHT, WIDTH)
-    
-    print('Image size: ', image_size)
-    
+        
     initial_learning_rate = args.learning_rate
     final_learning_rate = 1e-5
     decay_steps = countImg(datasetPath) // batch_size
@@ -132,29 +130,14 @@ def resize(component, target_height, target_width):
 
 def preprocessImage(image):
     with tf.device('/CPU:0'):
-        # Convertir la imagen a escala de grises
         image = tf.image.rgb_to_grayscale(image)
-        
-        # Eliminar la dimensión del canal de escala de grises para obtener un tensor 2D
         image = tf.squeeze(image, axis=-1)
         
-        # Crear los wavelets primero
         LL, LH, HL = wavelet_transform(image)
         
-        print('LL Shape: ', LL.shape)
-        print('LH Shape: ', LH.shape)
-        print('HL Shape: ', HL.shape)
-        
-        # Concatenar los wavelets en un tensor de 3 canales
         wavelet_tensor = tf.stack([LL, LH, HL], axis=-1)
-        
-        print('wavelet tensor Shape: ', wavelet_tensor.shape)
-        
-        # Redimensionar el tensor resultante
         processed_image = tf.image.resize(wavelet_tensor, (HEIGHT, WIDTH), method='bilinear')
-        
-        print('processed image Shape: ', processed_image.shape)
-    
+            
     return processed_image
 
 def getModel(loadFlag, path):
