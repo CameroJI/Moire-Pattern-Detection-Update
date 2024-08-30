@@ -56,37 +56,6 @@ def createModel(height, width, depth):
 
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
 
-def bottleneck_block(x, filters, strides=(1, 1), downsample=False):
-    shortcut = x
-
-    x = Conv2D(filters, (1, 1), strides=strides, padding='same')(x)
-    x = BatchNormalization()(x)
-    x = ReLU()(x)
-    
-    x = Conv2D(filters, (3, 3), padding='same')(x)
-    x = BatchNormalization()(x)
-    x = ReLU()(x)
-    
-    x = Conv2D(filters * 4, (1, 1), padding='same')(x)
-    x = BatchNormalization()(x)
-    
-    if downsample or x.shape[-1] != shortcut.shape[-1]:
-        shortcut = Conv2D(filters * 4, (1, 1), strides=strides, padding='same')(shortcut)
-        shortcut = BatchNormalization()(shortcut)
-
-    x = Add()([x, shortcut])
-    x = ReLU()(x)
-    
-    return x
-
-def hrnet_block(x, filters, blocks, strides=(1, 1)):
-    for _ in range(blocks):
-        x = bottleneck_block(x, filters, strides)
-    return x
-
-def resize_like(tensor, size):
-    return tf.image.resize(tensor, size, method='bilinear')
-
 def createMobileModel(height, width, depth):
     inputs = Input(shape=(height, width, depth))
     
@@ -100,47 +69,66 @@ def createMobileModel(height, width, depth):
     x = ReLU()(x)
 
     # Stage 1
-    x = hrnet_block(x, 64, 4)
+    x = Conv2D(64, (3, 3), padding='same')(x)
+    x = BatchNormalization()(x)
+    x = ReLU()(x)
     
     # Stage 2
-    x1 = hrnet_block(x, 32, 4)
-    x2 = hrnet_block(x, 64, 4)
+    x1 = Conv2D(32, (3, 3), padding='same')(x)
+    x1 = BatchNormalization()(x1)
+    x1 = ReLU()(x1)
+    
+    x2 = Conv2D(64, (3, 3), padding='same')(x)
+    x2 = BatchNormalization()(x2)
+    x2 = ReLU()(x2)
     x2 = UpSampling2D(size=(2, 2))(x2)
     
-    # Resize x2 to match x1 dimensions
-    x2 = resize_like(x2, (x1.shape[1], x1.shape[2]))
-    
+    x2 = tf.image.resize(x2, (x1.shape[1], x1.shape[2]))  # Resize x2 to match x1 dimensions
     x = Concatenate()([x1, x2])
     
     # Stage 3
-    x1 = hrnet_block(x, 32, 4)
-    x2 = hrnet_block(x, 64, 4)
-    x3 = hrnet_block(x, 128, 4)
+    x1 = Conv2D(32, (3, 3), padding='same')(x)
+    x1 = BatchNormalization()(x1)
+    x1 = ReLU()(x1)
     
-    # Resize x2 and x3 to match x1 dimensions
+    x2 = Conv2D(64, (3, 3), padding='same')(x)
+    x2 = BatchNormalization()(x2)
+    x2 = ReLU()(x2)
     x2 = UpSampling2D(size=(2, 2))(x2)
-    x2 = resize_like(x2, (x1.shape[1], x1.shape[2]))
     
+    x3 = Conv2D(128, (3, 3), padding='same')(x)
+    x3 = BatchNormalization()(x3)
+    x3 = ReLU()(x3)
     x3 = UpSampling2D(size=(4, 4))(x3)
-    x3 = resize_like(x3, (x1.shape[1], x1.shape[2]))
+    
+    x2 = tf.image.resize(x2, (x1.shape[1], x1.shape[2]))
+    x3 = tf.image.resize(x3, (x1.shape[1], x1.shape[2]))
     
     x = Concatenate()([x1, x2, x3])
     
     # Stage 4
-    x1 = hrnet_block(x, 32, 4)
-    x2 = hrnet_block(x, 64, 4)
-    x3 = hrnet_block(x, 128, 4)
-    x4 = hrnet_block(x, 256, 4)
+    x1 = Conv2D(32, (3, 3), padding='same')(x)
+    x1 = BatchNormalization()(x1)
+    x1 = ReLU()(x1)
     
-    # Resize x2, x3, and x4 to match x1 dimensions
+    x2 = Conv2D(64, (3, 3), padding='same')(x)
+    x2 = BatchNormalization()(x2)
+    x2 = ReLU()(x2)
     x2 = UpSampling2D(size=(2, 2))(x2)
-    x2 = resize_like(x2, (x1.shape[1], x1.shape[2]))
     
+    x3 = Conv2D(128, (3, 3), padding='same')(x)
+    x3 = BatchNormalization()(x3)
+    x3 = ReLU()(x3)
     x3 = UpSampling2D(size=(4, 4))(x3)
-    x3 = resize_like(x3, (x1.shape[1], x1.shape[2]))
     
+    x4 = Conv2D(256, (3, 3), padding='same')(x)
+    x4 = BatchNormalization()(x4)
+    x4 = ReLU()(x4)
     x4 = UpSampling2D(size=(8, 8))(x4)
-    x4 = resize_like(x4, (x1.shape[1], x1.shape[2]))
+    
+    x2 = tf.image.resize(x2, (x1.shape[1], x1.shape[2]))
+    x3 = tf.image.resize(x3, (x1.shape[1], x1.shape[2]))
+    x4 = tf.image.resize(x4, (x1.shape[1], x1.shape[2]))
     
     x = Concatenate()([x1, x2, x3, x4])
     
