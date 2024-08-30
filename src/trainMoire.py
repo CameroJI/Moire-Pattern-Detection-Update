@@ -32,7 +32,7 @@ def main(args):
     WIDTH = args.width
     image_size = (HEIGHT, WIDTH)
     
-    print('Image sie: ', image_size)
+    print('Image size: ', image_size)
     
     initial_learning_rate = args.learning_rate
     final_learning_rate = 1e-5
@@ -151,7 +151,7 @@ def preprocessImage(image):
         print('wavelet tensor Shape: ', wavelet_tensor.shape)
         
         # Redimensionar el tensor resultante
-        processed_image = tf.image.resize(wavelet_tensor, (1400, 800), method='bilinear')
+        processed_image = tf.image.resize(wavelet_tensor, (HEIGHT, WIDTH), method='bilinear')
         
         print('processed image Shape: ', processed_image.shape)
     
