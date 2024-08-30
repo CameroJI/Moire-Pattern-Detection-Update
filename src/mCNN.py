@@ -1,6 +1,6 @@
 from keras.models import Model # type: ignore
 from keras.layers import Input, Conv2D, AveragePooling2D, Dense, Dropout, Concatenate, Flatten, MaxPooling2D, Multiply, Maximum, GlobalAveragePooling2D, BatchNormalization, ReLU, Resizing # type: ignore
-from keras.applications import MobileNetV2  # type: ignore
+from keras.applications import DenseNet121  # type: ignore
 from keras import regularizers
 import tensorflow as tf
 
@@ -57,23 +57,19 @@ def createModel(height, width, depth):
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
 
 def createMobileModel(height, width, depth):
-    inputs = Input(shape=(height, width, depth))
-    
-    # Convolutional Layers
-    x = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
-    x = MaxPooling2D((2, 2))(x)
-    
-    x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
-    x = MaxPooling2D((2, 2))(x)
-    
-    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
-    x = MaxPooling2D((2, 2))(x)
-    
-    # Global Average Pooling
+    # Cargar DenseNet121 preentrenado sin la capa final
+    base_model = DenseNet121(
+        weights='imagenet',
+        include_top=False,
+        input_shape=(height, width, 3)
+    )
+
+    for layer in base_model.layers:
+        layer.trainable = False
+
+    x = base_model.output
     x = GlobalAveragePooling2D()(x)
+    x = Dense(1024, activation='relu')(x)
+    predictions = Dense(1, activation='sigmoid')(x)
     
-    # Fully Connected Layers
-    x = Dense(64, activation='relu')(x)
-    x = Dense(1, activation='sigmoid')(x)
-    
-    return Model(inputs, x)
+    return Model(inputs=base_model.input, outputs=predictions)

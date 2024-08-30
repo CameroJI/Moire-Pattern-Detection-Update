@@ -71,7 +71,7 @@ def main(args):
         zoom_range=0.2,
         horizontal_flip=True,
         vertical_flip=True,
-        brightness_range=[0.8, 1.2],
+        brightness_range=[0.65, 1.35],
         preprocessing_function=preprocessImage
     )
 
@@ -131,6 +131,7 @@ def resize(component, target_height, target_width):
 def preprocessImage(image):
     with tf.device('/CPU:0'):
         image = tf.image.rgb_to_grayscale(image)
+        image = tf.image.equalize_hist(image)  # Normalización de histograma
         image = tf.squeeze(image, axis=-1)
         
         LL, LH, HL = wavelet_transform(image)
