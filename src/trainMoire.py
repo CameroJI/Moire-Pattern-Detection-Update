@@ -131,6 +131,7 @@ def resize(component, target_height, target_width):
 def preprocessImage(image):
     with tf.device('/CPU:0'):
         image = tf.image.rgb_to_grayscale(image)
+        image = tf.squeeze(image, axis=-1)
         
         print('image shape: ', image.shape)
         
