@@ -136,13 +136,9 @@ def preprocessImage(image):
     
     LL, LH, HL, HH = wavelet_transform(image)
     
-    LL_resized = resize(LL, int(HEIGHT/8), int(WIDTH/8))
-    LH_resized = resize(LH, int(HEIGHT/8), int(WIDTH/8))
-    HL_resized = resize(HL, int(HEIGHT/8), int(WIDTH/8))
-    HH_resized = resize(HH, int(HEIGHT/8), int(WIDTH/8))
+    wavelet_tensor = tf.stack([LL, HH, HL, HH], axis=-1)
     
-    wavelet_tensor = tf.stack([LL_resized, LH_resized, HL_resized, HH_resized], axis=-1)
-    
+    wavelet_tensor = resize(wavelet_tensor, int(HEIGHT/8), int(WIDTH/8))    
     return wavelet_tensor
 
 def getModel(loadFlag, path):
