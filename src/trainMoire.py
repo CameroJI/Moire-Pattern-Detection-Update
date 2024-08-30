@@ -101,9 +101,6 @@ def countImg(directory):
     return total_images
 
 def getModel(loadFlag, path):
-    if not exists(path):
-        makedirs(path)
-    
     if loadFlag:
         model = load_model(path)
         # for layer in model.layers:
