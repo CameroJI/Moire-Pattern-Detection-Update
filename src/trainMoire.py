@@ -68,10 +68,10 @@ def main(args):
         image_size=(HEIGHT, WIDTH),
         preprocess_function=preprocessImage,
         class_mode='binary',
-        classes={'Ataque': 1, 'Reales': 0}
+        classes={'Reales': 0, 'Ataque': 1}
     )
     
-    class_weights = {0: 1.2, 1: 1.0}
+    class_weights = {0: 1.0, 1: 2.0}
     
     model.fit(
         X_train, 
