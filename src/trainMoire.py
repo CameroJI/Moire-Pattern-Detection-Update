@@ -68,7 +68,7 @@ def main(args):
         image_size=(HEIGHT, WIDTH),
         preprocess_function=preprocessImage,
         class_mode='binary',
-        classes={'Ataque': 0, 'Reales': 1}
+        classes={'Ataque': 1, 'Reales': 0}
     )
     
     class_weights = {0: 1.2, 1: 1.0}
