@@ -1,5 +1,7 @@
 import os
+import sys
 import argparse
+import cv2
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model # type: ignore
@@ -24,18 +26,13 @@ def main(args):
 
     evaluateFolder(model, dirPath)
 
-def preprocess_image(img_path):
-    img = image.load_img(img_path, target_size=(HEIGHT, WIDTH))
-    img_array = img_to_array(img)
-    img_array = np.expand_dims(img_array, axis=0)
-    
-    img_tensor = tf.convert_to_tensor(img_array, dtype=tf.float32)[0]
-    
-    img_tensor = tf.image.rgb_to_grayscale(img_tensor)
+def preprocess_image(img):
+    imageCrop = crop(img, HEIGHT, WIDTH)
+    img_tensor = tf.image.rgb_to_grayscale(imageCrop)
     img_tensor = tf.image.per_image_standardization(img_tensor)
     img_tensor = tf.squeeze(img_tensor, axis=-1)
     
-    img_tensor = crop(img_tensor, HEIGHT, WIDTH)
+    print(img_tensor.shape)
     
     LL, LH, HL, HH = wavelet_transform(img_tensor.numpy())
     
@@ -59,21 +56,32 @@ def preprocess_image(img_path):
 def evaluateFolder(model, image_folder):
     image_files = [f for f in os.listdir(image_folder) if os.path.isfile(os.path.join(image_folder, f))]
     
+    if not image_files:
+        print("No images found in the specified folder.")
+        return
+    
     for img_file in image_files:
         img_path = os.path.join(image_folder, img_file)
-        preprocessed_img = preprocess_image(img_path)
+        
+        # Cargar y preprocesar la imagen
+        img = cv2.imread(img_path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        preprocessed_img = preprocess_image(img)
         
         # Realizar la predicción
         prediction = model.predict(preprocessed_img)
         predicted_class = np.argmax(prediction, axis=-1)[0]
         
-        plt.imshow(image.load_img(img_path))
-        plt.title(f"Predicted: {predicted_class}")
-        plt.axis('off')
-        plt.show()
+        # Convertir la imagen a formato que OpenCV pueda mostrar
+        img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+        
+        # Mostrar la imagen con OpenCV
+        cv2.imshow('Image', img_cv)
+        cv2.displayOverlay('Image', f"Predicted: {predicted_class}", 2000)
         
         # Esperar a que el usuario presione una tecla para continuar
-        input("Press Enter to continue to the next image...")
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
     
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
@@ -81,6 +89,9 @@ def parse_arguments(argv):
     parser.add_argument('--modelPath', type=str, required=True, help='Path to the trained model.', default='./')
     parser.add_argument('--dirPath', type=str, required=True, help='Folder containing images to evaluate.', default='./')
     parser.add_argument('--height', type=int, required=True, help='Height of images to resize for model input.', default=800)
-    parser.add_argument('--width', type=int, required=True, help='Width of images to resize for model input.', width=1400)
+    parser.add_argument('--width', type=int, required=True, help='Width of images to resize for model input.', default=1400)
     
     return parser.parse_args(argv)
+
+if __name__ == '__main__':
+    main(parse_arguments(sys.argv[1:]))
