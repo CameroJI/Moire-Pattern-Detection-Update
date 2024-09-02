@@ -59,7 +59,8 @@ class CustomImageDataGenerator(tf.keras.utils.Sequence):
             'LL_Input': [],
             'LH_Input': [],
             'HL_Input': [],
-            'HH_Input': []
+            'HH_Input': [],
+            'Scharr_Input': []  # Añadir Scharr_Input
         }
         
         for image_path in batch_image_paths:
@@ -82,7 +83,8 @@ class CustomImageDataGenerator(tf.keras.utils.Sequence):
         components = self.preprocess_function(image)
         
         # Verificar que la función de preprocesamiento devuelve un diccionario con las claves correctas
-        if not all(key in components for key in ['LL_Input', 'LH_Input', 'HL_Input', 'HH_Input']):
-            raise ValueError("Preprocessing function must return a dictionary with keys 'LL_Input', 'LH_Input', 'HL_Input', and 'HH_Input'.")
+        required_keys = {'LL_Input', 'LH_Input', 'HL_Input', 'HH_Input', 'Scharr_Input'}
+        if not all(key in components for key in required_keys):
+            raise ValueError("Preprocessing function must return a dictionary with keys 'LL_Input', 'LH_Input', 'HL_Input', 'HH_Input', and 'Scharr_Input'.")
         
         return components

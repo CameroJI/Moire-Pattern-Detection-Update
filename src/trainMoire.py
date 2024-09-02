@@ -2,14 +2,14 @@ import sys
 import argparse
 import pywt
 import numpy as np
+import cv2
 from os import makedirs, walk
 from os.path import exists
 import tensorflow as tf
 from tensorflow import keras
 from keras.models import load_model # type: ignore
-from keras.layers import Dense # type: ignore
 from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
-from mCNN import createMobileModel
+from mCNN import createModelElements
 from modelCallbacks import BatchCheckpointCallback, EpochCheckpointCallback, CustomImageDataGenerator
 
 HEIGHT = 800
@@ -107,6 +107,17 @@ def crop(image, target_height, target_width):
     
     return cropped_image
 
+def Scharr(img):
+    image_np = img.numpy()
+
+    scharr_x = cv2.Scharr(image_np, cv2.CV_64F, 1, 0)
+    scharr_y = cv2.Scharr(image_np, cv2.CV_64F, 0, 1)
+
+    scharr_combined = np.sqrt(scharr_x**2 + scharr_y**2)
+    scharr_combined = np.uint8(scharr_combined)
+    
+    return scharr_combined
+
 def wavelet_transform(image, wavelet='bior2.2', level=3):
     coeffs = pywt.wavedec2(image, wavelet, level=level)
     LL, (LH, HL, HH) = coeffs[0], coeffs[1]
@@ -123,6 +134,7 @@ def preprocessImage(image):
     image = tf.image.random_contrast(image, lower=0.65, upper=1.35)
     
     image = crop(image, HEIGHT, WIDTH)
+    imgScharr = Scharr(image)
     image = tf.image.rgb_to_grayscale(image)
     image = tf.image.per_image_standardization(image)
     image = tf.squeeze(image, axis=-1)
@@ -133,30 +145,27 @@ def preprocessImage(image):
     LH_tensor = np.expand_dims(LH, axis=-1)
     HL_tensor = np.expand_dims(HL, axis=-1)
     HH_tensor = np.expand_dims(HH, axis=-1)
+    imgScharr_tensor = np.expand_dims(imgScharr, axis=-1)
     
     LL_resized = resize(LL_tensor, HEIGHT/8, WIDTH/8)
     LH_resized = resize(LH_tensor, HEIGHT/8, WIDTH/8)
     HL_resized = resize(HL_tensor, HEIGHT/8, WIDTH/8)
     HH_resized = resize(HH_tensor, HEIGHT/8, WIDTH/8)
-     
+    imgScharr_resized = resize(imgScharr_tensor, HEIGHT/8, WIDTH/8)
+    
     return {
         'LL_Input': LL_resized,
         'LH_Input': LH_resized,
         'HL_Input': HL_resized,
-        'HH_Input': HH_resized
+        'HH_Input': HH_resized,
+        'Scharr_Input': imgScharr_resized
     }
 
 def getModel(loadFlag, path):
     if loadFlag:
         model = load_model(path)
-        # for layer in model.layers:
-        #     layer.trainable = False
-
-        # for layer in model.layers:
-        #     if isinstance(layer, Dense):
-        #         layer.trainable = True
     else:
-        model = createMobileModel(height=int(HEIGHT/8), width=int(WIDTH/8), depth=1)
+        model = createModelElements(height=int(HEIGHT/8), width=int(WIDTH/8), depth=1)
         
     return model
 

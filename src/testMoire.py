@@ -3,6 +3,7 @@ import sys
 import argparse
 import cv2
 import numpy as np
+
 import tensorflow as tf
 from tensorflow.keras.models import load_model # type: ignore
 from tensorflow.keras.preprocessing import image # type: ignore
@@ -72,6 +73,7 @@ def evaluateFolder(model, image_folder, batch_size=32):
     for batch_idx in range(num_batches):
         batch_files = image_files[batch_idx * batch_size:(batch_idx + 1) * batch_size]
         batch_images = []
+        img_paths = []
         
         for img_file in batch_files:
             img_path = os.path.join(image_folder, img_file)
@@ -85,6 +87,7 @@ def evaluateFolder(model, image_folder, batch_size=32):
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 preprocessed_img = preprocess_image(img)
                 batch_images.append(preprocessed_img)
+                img_paths.append(img_path)
             
             # Si algunas imágenes no se cargaron correctamente
             if not batch_images:
@@ -100,7 +103,9 @@ def evaluateFolder(model, image_folder, batch_size=32):
         
         # Realizar la predicción en el batch
         predictions = model.predict_on_batch(batch_inputs)
-        predicted_classes = (predictions > 0.5).astype(int)        
+        predicted_classes = (predictions > 0.4).astype(int)
+        for img_path, prediction in zip(img_paths, predicted_classes):
+            print(f'Predicción clase: {prediction[0]}\tRuta: {img_path}')
         
         # Contar los positivos y negativos en el batch
         batch_positives = np.sum(predicted_classes == 0)
