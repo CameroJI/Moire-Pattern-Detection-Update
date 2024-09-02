@@ -146,13 +146,14 @@ def preprocessImage(image):
     HL_tensor = np.expand_dims(HL, axis=-1)
     HH_tensor = np.expand_dims(HH, axis=-1)
     imgScharr_tensor = np.expand_dims(imgScharr, axis=-1)
-    print(imgScharr_tensor.shape)
     
     LL_resized = resize(LL_tensor, HEIGHT/8, WIDTH/8)
     LH_resized = resize(LH_tensor, HEIGHT/8, WIDTH/8)
     HL_resized = resize(HL_tensor, HEIGHT/8, WIDTH/8)
     HH_resized = resize(HH_tensor, HEIGHT/8, WIDTH/8)
     imgScharr_resized = resize(imgScharr_tensor, HEIGHT/8, WIDTH/8)
+    
+    print(imgScharr_resized.shape)
     
     return {
         'LL_Input': LL_resized,
