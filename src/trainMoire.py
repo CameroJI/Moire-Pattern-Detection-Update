@@ -133,9 +133,9 @@ def preprocessImage(image):
     image = tf.image.random_brightness(image, max_delta=0.3)
     image = tf.image.random_contrast(image, lower=0.65, upper=1.35)
     
-    image = crop(image, HEIGHT, WIDTH)
-    imgScharr = Scharr(image)
-    image = tf.image.rgb_to_grayscale(image)
+    imageCrop = crop(image, HEIGHT, WIDTH)
+    image = tf.image.rgb_to_grayscale(imageCrop)
+    imgScharr = Scharr(image)    
     image = tf.image.per_image_standardization(image)
     image = tf.squeeze(image, axis=-1)
     
