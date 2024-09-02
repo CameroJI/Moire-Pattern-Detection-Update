@@ -56,38 +56,62 @@ def createModel(height, width, depth):
 
     return Model(inputs=[inpLL, inpLH, inpHL, inpHH], outputs=out)
 
-def processComponent(input_layer):
-    # Convoluciones con diferentes tamaños de kernel
-    x = Conv2D(32, (3, 3), activation='relu', padding='same')(input_layer)
-    x = Conv2D(32, (5, 5), activation='relu', padding='same')(x)
-    x = Conv2D(32, (7, 7), activation='relu', padding='same')(x)
-    x = MaxPooling2D((2, 2))(x)
-    
-    x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
-    x = Conv2D(64, (5, 5), activation='relu', padding='same')(x)
-    x = Conv2D(64, (7, 7), activation='relu', padding='same')(x)
-    x = MaxPooling2D((2, 2))(x)
-    
-    return Flatten()(x)
-
 def createModelElements(height, width, depth):
     input_LL = Input(shape=(height, width, depth), name='LL_Input')
     input_HL = Input(shape=(height, width, depth), name='HL_Input')
     input_LH = Input(shape=(height, width, depth), name='LH_Input')
     input_HH = Input(shape=(height, width, depth), name='HH_Input')
+    
     input_Scharr = Input(shape=(height, width, depth), name='Scharr_Input')
+    input_Sobel = Input(shape=(height, width, depth), name='Sobel_Input')
+    input_Gabor = Input(shape=(height, width, depth), name='Gabor_Input')
 
-    # Procesamiento de cada componente usando la función definida
-    x_LL = processComponent(input_LL)
-    x_HL = processComponent(input_HL)
-    x_LH = processComponent(input_LH)
-    x_HH = processComponent(input_HH)
-    x_Scharr = processComponent(input_Scharr)  # Procesar la entrada Scharr
+    x_LL = Conv2D(32, (3, 3), activation='relu', padding='same')(input_LL)
+    x_LL = MaxPooling2D((2, 2))(x_LL)
+    x_LL = Conv2D(64, (3, 3), activation='relu', padding='same')(x_LL)
+    x_LL = MaxPooling2D((2, 2))(x_LL)
+    x_LL = Flatten()(x_LL)
+
+    x_HL = Conv2D(32, (3, 3), activation='relu', padding='same')(input_HL)
+    x_HL = MaxPooling2D((2, 2))(x_HL)
+    x_HL = Conv2D(64, (3, 3), activation='relu', padding='same')(x_HL)
+    x_HL = MaxPooling2D((2, 2))(x_HL)
+    x_HL = Flatten()(x_HL)
+
+    x_LH = Conv2D(32, (3, 3), activation='relu', padding='same')(input_LH)
+    x_LH = MaxPooling2D((2, 2))(x_LH)
+    x_LH = Conv2D(64, (3, 3), activation='relu', padding='same')(x_LH)
+    x_LH = MaxPooling2D((2, 2))(x_LH)
+    x_LH = Flatten()(x_LH)
+
+    x_HH = Conv2D(32, (3, 3), activation='relu', padding='same')(input_HH)
+    x_HH = MaxPooling2D((2, 2))(x_HH)
+    x_HH = Conv2D(64, (3, 3), activation='relu', padding='same')(x_HH)
+    x_HH = MaxPooling2D((2, 2))(x_HH)
+    x_HH = Flatten()(x_HH)
+
+    x_Scharr = Conv2D(32, (3, 3), activation='relu', padding='same')(input_Scharr)
+    x_Scharr = MaxPooling2D((2, 2))(x_Scharr)
+    x_Scharr = Conv2D(64, (3, 3), activation='relu', padding='same')(x_Scharr)
+    x_Scharr = MaxPooling2D((2, 2))(x_Scharr)
+    x_Scharr = Flatten()(x_Scharr)
+
+    x_Sobel = Conv2D(32, (3, 3), activation='relu', padding='same')(input_Sobel)
+    x_Sobel = MaxPooling2D((2, 2))(x_Sobel)
+    x_Sobel = Conv2D(64, (3, 3), activation='relu', padding='same')(x_Sobel)
+    x_Sobel = MaxPooling2D((2, 2))(x_Sobel)
+    x_Sobel = Flatten()(x_Sobel)
+
+    x_Gabor = Conv2D(32, (3, 3), activation='relu', padding='same')(input_Gabor)
+    x_Gabor = MaxPooling2D((2, 2))(x_Gabor)
+    x_Gabor = Conv2D(64, (3, 3), activation='relu', padding='same')(x_Gabor)
+    x_Gabor = MaxPooling2D((2, 2))(x_Gabor)
+    x_Gabor = Flatten()(x_Gabor)
 
     # Concatenación de características
-    concatenated = Concatenate()([x_LL, x_HL, x_LH, x_HH, x_Scharr])
+    concatenated = Concatenate()([x_LL, x_HL, x_LH, x_HH, x_Scharr, x_Sobel, x_Gabor])
     x = Dense(128, activation='relu')(concatenated)
     x = Dense(64, activation='relu')(x)
     predictions = Dense(1, activation='sigmoid')(x)
 
-    return Model(inputs=[input_LL, input_HL, input_LH, input_HH, input_Scharr], outputs=predictions)
+    return Model(inputs=[input_LL, input_HL, input_LH, input_HH, input_Scharr, input_Sobel, input_Gabor], outputs=predictions)

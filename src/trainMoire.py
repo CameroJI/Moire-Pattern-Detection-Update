@@ -118,6 +118,26 @@ def Scharr(img):
     
     return scharr_combined
 
+def Sobel(img):
+    image_np = img.numpy()
+    
+    sobel_x = cv2.Sobel(image_np, cv2.CV_64F, 1, 0, ksize=3)
+    sobel_y = cv2.Sobel(image_np, cv2.CV_64F, 0, 1, ksize=3)
+
+    sobel_combined = np.sqrt(sobel_x**2 + sobel_y**2)
+    sobel_combined = np.uint8(sobel_combined)
+    
+    return sobel_combined
+
+def Gabor(img, ksize=31, sigma=6.0, theta=0, lambd=4.0, gamma=0.2, psi=0.0):
+    image_np = img.numpy()
+        
+    gabor_kernel = cv2.getGaborKernel((ksize, ksize), sigma, theta, lambd, gamma, psi, ktype=cv2.CV_64F)
+    gabor_filtered = cv2.filter2D(image_np, cv2.CV_64F, gabor_kernel)
+    gabor_filtered = np.uint8(np.abs(gabor_filtered))
+    
+    return gabor_filtered
+
 def wavelet_transform(image, wavelet='bior2.2', level=3):
     coeffs = pywt.wavedec2(image, wavelet, level=level)
     LL, (LH, HL, HH) = coeffs[0], coeffs[1]
@@ -128,12 +148,16 @@ def resize(component, target_height, target_width):
     return component_resized
 
 def preprocessImage(image):
+    image = tf.image.random_flip_left_right(image)
+    image = tf.image.random_flip_up_down(image)
     image = tf.image.random_brightness(image, max_delta=0.3)
     image = tf.image.random_contrast(image, lower=0.65, upper=1.35)
     
     imageCrop = crop(image, HEIGHT, WIDTH)
     image = tf.image.rgb_to_grayscale(imageCrop)
-    imgScharr = Scharr(image)    
+    imgScharr = Scharr(image)
+    imgSobel = Sobel(image)
+    imgGabor = Gabor(image)
     image = tf.image.per_image_standardization(image)
     image = tf.squeeze(image, axis=-1)
     
@@ -144,19 +168,25 @@ def preprocessImage(image):
     HL_tensor = np.expand_dims(HL, axis=-1)
     HH_tensor = np.expand_dims(HH, axis=-1)
     imgScharr_tensor = np.expand_dims(imgScharr, axis=-1)
+    imgSobel_tensor = np.expand_dims(imgSobel, axis=-1)
+    imgGabor_tensor = np.expand_dims(imgGabor, axis=-1)
     
     LL_resized = resize(LL_tensor, HEIGHT/8, WIDTH/8)
     LH_resized = resize(LH_tensor, HEIGHT/8, WIDTH/8)
     HL_resized = resize(HL_tensor, HEIGHT/8, WIDTH/8)
     HH_resized = resize(HH_tensor, HEIGHT/8, WIDTH/8)
     imgScharr_resized = resize(imgScharr_tensor, HEIGHT/8, WIDTH/8)
+    imgSobel_resized= resize(imgSobel_tensor, HEIGHT/8, WIDTH/8)
+    imgGabor_resized = resize(imgGabor_tensor, HEIGHT/8, WIDTH/8)
         
     return {
         'LL_Input': LL_resized,
         'LH_Input': LH_resized,
         'HL_Input': HL_resized,
         'HH_Input': HH_resized,
-        'Scharr_Input': imgScharr_resized
+        'Scharr_Input': imgScharr_resized,
+        'Sobel_Input': imgSobel_resized,
+        'Gabor_Input': imgGabor_resized
     }
 
 def getModel(loadFlag, path):

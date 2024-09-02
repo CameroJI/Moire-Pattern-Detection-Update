@@ -28,35 +28,86 @@ def main(args):
     #print(model.summary())
 
     evaluateFolder(model, dirPath)
+    
+def Scharr(img):
+    image_np = img.numpy()
 
-def preprocess_image(img):
-    imageCrop = crop(img, HEIGHT, WIDTH)
-    img_tensor = tf.image.rgb_to_grayscale(imageCrop)
-    img_tensor = tf.image.per_image_standardization(img_tensor)
-    img_tensor = tf.squeeze(img_tensor, axis=-1)
+    scharr_x = cv2.Scharr(image_np, cv2.CV_64F, 1, 0)
+    scharr_y = cv2.Scharr(image_np, cv2.CV_64F, 0, 1)
+
+    scharr_combined = np.sqrt(scharr_x**2 + scharr_y**2)
+    scharr_combined = np.uint8(scharr_combined)
+    
+    return scharr_combined
+
+def Sobel(img):
+    image_np = img.numpy()
+    
+    sobel_x = cv2.Sobel(image_np, cv2.CV_64F, 1, 0, ksize=3)
+    sobel_y = cv2.Sobel(image_np, cv2.CV_64F, 0, 1, ksize=3)
+
+    sobel_combined = np.sqrt(sobel_x**2 + sobel_y**2)
+    sobel_combined = np.uint8(sobel_combined)
+    
+    return sobel_combined
+
+def Gabor(img, ksize=31, sigma=6.0, theta=0, lambd=4.0, gamma=0.2, psi=0.0):
+    image_np = img.numpy()
         
-    LL, LH, HL, HH = wavelet_transform(img_tensor.numpy())
+    gabor_kernel = cv2.getGaborKernel((ksize, ksize), sigma, theta, lambd, gamma, psi, ktype=cv2.CV_64F)
+    gabor_filtered = cv2.filter2D(image_np, cv2.CV_64F, gabor_kernel)
+    gabor_filtered = np.uint8(np.abs(gabor_filtered))
+    
+    return gabor_filtered
+
+def preprocessImage(image):
+    image = tf.image.random_flip_left_right(image)
+    image = tf.image.random_flip_up_down(image)
+    image = tf.image.random_brightness(image, max_delta=0.3)
+    image = tf.image.random_contrast(image, lower=0.65, upper=1.35)
+    
+    imageCrop = crop(image, HEIGHT, WIDTH)
+    image = tf.image.rgb_to_grayscale(imageCrop)
+    imgScharr = Scharr(image)
+    imgSobel = Sobel(image)
+    imgGabor = Gabor(image)
+    image = tf.image.per_image_standardization(image)
+    image = tf.squeeze(image, axis=-1)
+    
+    LL, LH, HL, HH = wavelet_transform(image)
     
     LL_tensor = np.expand_dims(LL, axis=-1)
     LH_tensor = np.expand_dims(LH, axis=-1)
     HL_tensor = np.expand_dims(HL, axis=-1)
     HH_tensor = np.expand_dims(HH, axis=-1)
+    imgScharr_tensor = np.expand_dims(imgScharr, axis=-1)
+    imgSobel_tensor = np.expand_dims(imgSobel, axis=-1)
+    imgGabor_tensor = np.expand_dims(imgGabor, axis=-1)
     
     LL_resized = resize(LL_tensor, HEIGHT/8, WIDTH/8)
     LH_resized = resize(LH_tensor, HEIGHT/8, WIDTH/8)
     HL_resized = resize(HL_tensor, HEIGHT/8, WIDTH/8)
     HH_resized = resize(HH_tensor, HEIGHT/8, WIDTH/8)
+    imgScharr_resized = resize(imgScharr_tensor, HEIGHT/8, WIDTH/8)
+    imgSobel_resized= resize(imgSobel_tensor, HEIGHT/8, WIDTH/8)
+    imgGabor_resized = resize(imgGabor_tensor, HEIGHT/8, WIDTH/8)
     
     LL_resized = np.expand_dims(LL_resized, axis=0)
     LH_resized = np.expand_dims(LH_resized, axis=0)
     HL_resized = np.expand_dims(HL_resized, axis=0)
     HH_resized = np.expand_dims(HH_resized, axis=0)
-    
+    imgScharr_resized = np.expand_dims(imgScharr_resized, axis=0)
+    imgSobel_resized = np.expand_dims(imgSobel_resized, axis=0)
+    imgGabor_resized = np.expand_dims(imgGabor_resized, axis=0)
+              
     return {
         'LL_Input': LL_resized,
         'LH_Input': LH_resized,
         'HL_Input': HL_resized,
-        'HH_Input': HH_resized
+        'HH_Input': HH_resized,
+        'Scharr_Input': imgScharr_resized,
+        'Sobel_Input': imgSobel_resized,
+        'Gabor_Input': imgGabor_resized
     }
 
 def evaluateFolder(model, image_folder, batch_size=32):
@@ -85,7 +136,7 @@ def evaluateFolder(model, image_folder, batch_size=32):
                     print(f"Error loading image {img_path}. Skipping...")
                     continue
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                preprocessed_img = preprocess_image(img)
+                preprocessed_img = preprocessImage(img)
                 batch_images.append(preprocessed_img)
                 img_paths.append(img_path)
             
@@ -98,7 +149,10 @@ def evaluateFolder(model, image_folder, batch_size=32):
             'LL_Input': np.vstack([img['LL_Input'] for img in batch_images]),
             'LH_Input': np.vstack([img['LH_Input'] for img in batch_images]),
             'HL_Input': np.vstack([img['HL_Input'] for img in batch_images]),
-            'HH_Input': np.vstack([img['HH_Input'] for img in batch_images])
+            'HH_Input': np.vstack([img['HH_Input'] for img in batch_images]),
+            'Scharr_Input': np.vstack([img['Scharr_Input'] for img in batch_images]),
+            'Scharr_Input': np.vstack([img['Scharr_Input'] for img in batch_images]),
+            'Scharr_Input': np.vstack([img['Scharr_Input'] for img in batch_images]),
         }
         
         # Realizar la predicción en el batch
