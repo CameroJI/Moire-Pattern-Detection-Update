@@ -150,9 +150,7 @@ def preprocessImage(image):
     HL_resized = resize(HL_tensor, HEIGHT/8, WIDTH/8)
     HH_resized = resize(HH_tensor, HEIGHT/8, WIDTH/8)
     imgScharr_resized = resize(imgScharr_tensor, HEIGHT/8, WIDTH/8)
-    
-    print(imgScharr_resized.shape)
-    
+        
     return {
         'LL_Input': LL_resized,
         'LH_Input': LH_resized,
