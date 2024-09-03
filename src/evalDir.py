@@ -39,7 +39,7 @@ def evaluateFolders(model, root, height, width):
                 failCnt+=1
             if prediction == 'WARNING' or prediction == 'FAIL':
                 i+=1
-            print('---------------------------------------------------------------------')
+            print('-'*70)
             print(f'{imgPath}',end='\t')
             print(f'Score: {score}\tOcurrences: {ocurrences}\tPrediction: {prediction}\t{idx+1}/{len(listdir(root))}\n')
         
