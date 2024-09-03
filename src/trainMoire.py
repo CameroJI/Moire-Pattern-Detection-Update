@@ -71,7 +71,7 @@ def main(args):
         classes={'Reales': 0, 'Ataque': 1}
     )
     
-    class_weights = {0: 1.0, 1: 2.0}
+    class_weights = {0: 1.0, 1: 1.0}
     
     model.fit(
         X_train, 

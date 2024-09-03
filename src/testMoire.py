@@ -151,8 +151,8 @@ def evaluateFolder(model, image_folder, batch_size=32):
             'HL_Input': np.vstack([img['HL_Input'] for img in batch_images]),
             'HH_Input': np.vstack([img['HH_Input'] for img in batch_images]),
             'Scharr_Input': np.vstack([img['Scharr_Input'] for img in batch_images]),
-            'Scharr_Input': np.vstack([img['Scharr_Input'] for img in batch_images]),
-            'Scharr_Input': np.vstack([img['Scharr_Input'] for img in batch_images]),
+            'Sobel_Input': np.vstack([img['Sobel_Input'] for img in batch_images]),
+            'Gabor_Input': np.vstack([img['Gabor_Input'] for img in batch_images]),
         }
         
         # Realizar la predicción en el batch
