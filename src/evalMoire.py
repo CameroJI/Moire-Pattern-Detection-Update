@@ -3,12 +3,10 @@ import sys
 import argparse
 import cv2
 import numpy as np
-
+from os import listdir
+from os.path import join
 import tensorflow as tf
 from tensorflow.keras.models import load_model # type: ignore
-from tensorflow.keras.preprocessing import image # type: ignore
-from tensorflow.keras.preprocessing.image import img_to_array # type: ignore
-import matplotlib.pyplot as plt
 from trainMoire import crop, wavelet_transform, resize
 
 HEIGHT = 800
@@ -25,8 +23,6 @@ def main(args):
 
     model = load_model(modelPath)
     
-    #print(model.summary())
-
     evaluateFolder(model, dirPath)
     
 def Scharr(img):
@@ -59,6 +55,37 @@ def Gabor(img, ksize=31, sigma=6.0, theta=0, lambd=4.0, gamma=0.2, psi=0.0):
     gabor_filtered = np.uint8(np.abs(gabor_filtered))
     
     return gabor_filtered
+
+def evaluateFolders(model, root, height, width):
+    i = 0
+    warningsCnt = 0
+    failCnt = 0
+    imgTotal = len(listdir(root))
+    for idx, imgPath in enumerate(listdir(root)):
+        try:
+            path = join(root, imgPath)
+            
+            X_LL, X_LH, X_HL, X_HH, Y = getEvaluationBatch(path, height, width)
+            score, ocurrences, prediction = evaluate(model, X_LL, X_LH, X_HL, X_HH, Y)
+
+            if prediction == 'WARNING':
+                warningsCnt+=1
+            if prediction == 'FAIL':
+                failCnt+=1
+            if prediction == 'WARNING' or prediction == 'FAIL':
+                i+=1
+            print('-'*70)
+            print(f'{imgPath}',end='\t')
+            print(f'Score: {score}\tOcurrences: {ocurrences}\tPrediction: {prediction}\t{idx+1}/{len(listdir(root))}\n')
+        
+        except:
+            print(f'Archivo: {imgPath} no se pudo procesar.')
+            imgTotal -= 1
+        
+    print(f'Total de Ataques detectados: {failCnt}/{imgTotal}')
+    print(f'Total de Warning detectados: {warningsCnt}/{imgTotal}')
+    
+    print(f'Total detectados: {i}/{imgTotal}')  
 
 def preprocessImage(image):
     imageCrop = crop(image, HEIGHT, WIDTH)
@@ -155,31 +182,12 @@ def evaluateFolder(model, image_folder, batch_size=32):
         predicted_classes = (predictions > 0.45).astype(int)
         for img_path, prediction in zip(img_paths, predicted_classes):
             print(f'Predicción clase: {prediction[0]}\tRuta: {img_path}')
-        
-        # Contar los positivos y negativos en el batch
-        batch_positives = np.sum(predicted_classes == 0)
-        batch_negatives = np.sum(predicted_classes == 1)
-        
-        # Acumulación total
-        positivesCount += batch_positives
-        negativesCount += batch_negatives
-        
-        # Imprimir conteo por batch
-        print(f"Batch {batch_idx + 1}/{num_batches}: Positivos={batch_positives}, Negativos={batch_negatives}")
-    
-    # Imprimir conteo total
-    print('Total Positivos Detectados:', positivesCount)
-    print('Total Negativos Detectados:', negativesCount)
     
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
     
     parser.add_argument('--modelPath', type=str, required=True, help='Path to the trained model.')
-    parser.add_argument('--dirPath', type=str, required=True, help='Folder containing images to evaluate.')
-    parser.add_argument('--height', type=int, help='Height of images to resize for model input.', default=800)
-    parser.add_argument('--width', type=int, help='Width of images to resize for model input.', default=1400)
-    parser.add_argument('--batch_size', type=int, help='Number of images processed by evrey iteration.', default=32)
-
+    parser.add_argument('--rootPath', type=str, required=True, help='Folder containing images to evaluate.')
     
     return parser.parse_args(argv)
 
