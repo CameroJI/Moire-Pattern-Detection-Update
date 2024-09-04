@@ -9,7 +9,7 @@ from tensorflow.keras.models import load_model # type: ignore
 from tensorflow.keras.preprocessing import image # type: ignore
 from tensorflow.keras.preprocessing.image import img_to_array # type: ignore
 import matplotlib.pyplot as plt
-from trainMoire import crop, wavelet_transform, resize
+from utils import crop, waveletFunction, resize, Scharr, Sobel, Gabor
 
 HEIGHT = 800
 WIDTH = 1400
@@ -28,37 +28,6 @@ def main(args):
     #print(model.summary())
 
     evaluateFolder(model, dirPath)
-    
-def Scharr(img):
-    image_np = img.numpy()
-
-    scharr_x = cv2.Scharr(image_np, cv2.CV_64F, 1, 0)
-    scharr_y = cv2.Scharr(image_np, cv2.CV_64F, 0, 1)
-
-    scharr_combined = np.sqrt(scharr_x**2 + scharr_y**2)
-    scharr_combined = np.uint8(scharr_combined)
-    
-    return scharr_combined
-
-def Sobel(img):
-    image_np = img.numpy()
-    
-    sobel_x = cv2.Sobel(image_np, cv2.CV_64F, 1, 0, ksize=3)
-    sobel_y = cv2.Sobel(image_np, cv2.CV_64F, 0, 1, ksize=3)
-
-    sobel_combined = np.sqrt(sobel_x**2 + sobel_y**2)
-    sobel_combined = np.uint8(sobel_combined)
-    
-    return sobel_combined
-
-def Gabor(img, ksize=31, sigma=6.0, theta=0, lambd=4.0, gamma=0.2, psi=0.0):
-    image_np = img.numpy()
-        
-    gabor_kernel = cv2.getGaborKernel((ksize, ksize), sigma, theta, lambd, gamma, psi, ktype=cv2.CV_64F)
-    gabor_filtered = cv2.filter2D(image_np, cv2.CV_64F, gabor_kernel)
-    gabor_filtered = np.uint8(np.abs(gabor_filtered))
-    
-    return gabor_filtered
 
 def preprocessImage(image):
     imageCrop = crop(image, HEIGHT, WIDTH)
@@ -69,7 +38,7 @@ def preprocessImage(image):
     image = tf.image.per_image_standardization(image)
     image = tf.squeeze(image, axis=-1)
     
-    LL, LH, HL, HH = wavelet_transform(image)
+    LL, LH, HL, HH = waveletFunction(image)
     
     LL_tensor = np.expand_dims(LL, axis=-1)
     LH_tensor = np.expand_dims(LH, axis=-1)
