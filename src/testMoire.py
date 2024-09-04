@@ -147,7 +147,6 @@ def parse_arguments(argv):
     parser.add_argument('--height', type=int, help='Height of images to resize for model input.', default=800)
     parser.add_argument('--width', type=int, help='Width of images to resize for model input.', default=1400)
     parser.add_argument('--batch_size', type=int, help='Number of images processed by evrey iteration.', default=32)
-
     
     return parser.parse_args(argv)
 
