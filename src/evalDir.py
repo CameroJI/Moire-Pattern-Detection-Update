@@ -5,7 +5,7 @@ import tensorflow as tf
 from os import listdir
 from os.path import join, basename
 from math import pi
-from haar2D import fwdHaarDWT2D
+from utils import waveletFunction
 import numpy as np
 from sklearn import preprocessing
 from PIL import Image
@@ -196,7 +196,7 @@ def imageTransformation(img, height, width):
     if htChk > wdChk:
         imgGray = imgGray.rotate(-90, expand=1)
         
-    cA, cH, cV, cD  = fwdHaarDWT2D(imgGray)
+    cA, cH, cV, cD  = waveletFunction(imgGray)
     
     cA = Image.fromarray(cA)
     cH = Image.fromarray(cH)
