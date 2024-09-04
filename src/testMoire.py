@@ -1,8 +1,9 @@
-import os
 import sys
 import argparse
 import cv2
 import numpy as np
+from os import listdir
+from os.path import join, isfile
 
 import tensorflow as tf
 from tensorflow.keras.models import load_model # type: ignore
@@ -25,8 +26,6 @@ def main(args):
 
     model = load_model(modelPath)
     
-    #print(model.summary())
-
     evaluateFolder(model, dirPath)
 
 def preprocessImage(image):
@@ -75,7 +74,7 @@ def preprocessImage(image):
     }
 
 def evaluateFolder(model, image_folder, batch_size=32):
-    image_files = [f for f in os.listdir(image_folder) if os.path.isfile(os.path.join(image_folder, f))]
+    image_files = [f for f in listdir(image_folder) if isfile(join(image_folder, f))]
     
     if not image_files:
         print("No images found in the specified folder.")
@@ -91,7 +90,7 @@ def evaluateFolder(model, image_folder, batch_size=32):
         img_paths = []
         
         for img_file in batch_files:
-            img_path = os.path.join(image_folder, img_file)
+            img_path = join(image_folder, img_file)
             
             if img_path.endswith(('.jpg', '.jpeg', '.png', '.tiff')):
                 img = cv2.imread(img_path)
