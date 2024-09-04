@@ -152,7 +152,7 @@ def evaluateFolder(model, image_folder, batch_size=32):
         
         # Realizar la predicción en el batch
         predictions = model.predict_on_batch(batch_inputs)
-        predicted_classes = (predictions > 0.45).astype(int)
+        predicted_classes = (predictions > 0.4).astype(int)
         for img_path, prediction in zip(img_paths, predicted_classes):
             print(f'Predicción clase: {prediction[0]}\tRuta: {img_path}')
         
