@@ -7,7 +7,7 @@ from os import listdir
 from os.path import join
 import tensorflow as tf
 from tensorflow.keras.models import load_model # type: ignore
-from trainMoire import crop, wavelet_transform, resize
+from utils import crop, waveletFunction, resize
 
 HEIGHT = 800
 WIDTH = 1400
@@ -65,8 +65,14 @@ def evaluateFolders(model, root, height, width):
         try:
             path = join(root, imgPath)
             
-            X_LL, X_LH, X_HL, X_HH, Y = getEvaluationBatch(path, height, width)
-            score, ocurrences, prediction = evaluate(model, X_LL, X_LH, X_HL, X_HH, Y)
+            if path.endswith(('.jpg', '.jpeg', '.png', '.tiff')):
+                img = cv2.imread(img_path)
+                
+                if img is None:
+                    print(f"Error loading image {img_path}. Skipping...")
+                    continue
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                preprocessed_img = preprocessImage(img)
 
             if prediction == 'WARNING':
                 warningsCnt+=1
@@ -96,7 +102,7 @@ def preprocessImage(image):
     image = tf.image.per_image_standardization(image)
     image = tf.squeeze(image, axis=-1)
     
-    LL, LH, HL, HH = wavelet_transform(image)
+    LL, LH, HL, HH = waveletFunction(image)
     
     LL_tensor = np.expand_dims(LL, axis=-1)
     LH_tensor = np.expand_dims(LH, axis=-1)
@@ -187,7 +193,9 @@ def parse_arguments(argv):
     parser = argparse.ArgumentParser()
     
     parser.add_argument('--modelPath', type=str, required=True, help='Path to the trained model.')
-    parser.add_argument('--rootPath', type=str, required=True, help='Folder containing images to evaluate.')
+    parser.add_argument('--dirPath', type=str, required=True, help='Folder containing images to evaluate.')
+    parser.add_argument('--height', type=int, help='Image height resize', default=800)
+    parser.add_argument('--width', type=int, help='Image width resize', default=1400)
     
     return parser.parse_args(argv)
 

@@ -54,3 +54,7 @@ def waveletFunction(img):
     coeffs2 = pywt.wavedec2(img, 'bior2.2', level=3)
     LL, (HL, LH, HH) = coeffs2[0], coeffs2[1]
     return LL, LH, HL, HH
+
+def resize(component, target_height, target_width):
+    component_resized = tf.image.resize(component, (int(target_height), int(target_width)), method='bilinear')
+    return component_resized
