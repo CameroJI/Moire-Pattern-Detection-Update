@@ -167,8 +167,8 @@ def parse_arguments(argv):
     
     parser.add_argument('--learning_rate', type=float, help='Model learning rate for iteration', default=1e-3)
     
-    parser.add_argument('--loadCheckPoint', type=str2bool, help='Enable Checkpoint Load', default='True')
-    
+    parser.add_argument('--loadCheckPoint', action='store_true', default=False, help='load Checkpoint Model')
+
     return parser.parse_args(argv)
 
 if __name__ == '__main__':
