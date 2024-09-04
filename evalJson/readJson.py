@@ -2,7 +2,6 @@ import pandas as pd
 import json
 
 def flatten_json(json_obj):
-    """Función para aplanar un JSON anidado."""
     flat_dict = {}
 
     def flatten(x, name=''):
