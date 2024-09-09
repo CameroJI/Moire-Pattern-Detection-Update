@@ -58,3 +58,45 @@ def waveletFunction(img):
 def resize(component, target_height, target_width):
     component_resized = tf.image.resize(component, (int(target_height), int(target_width)), method='bilinear')
     return component_resized
+
+def preprocessImage(image, height, width):
+    image = tf.image.random_flip_left_right(image)
+    image = tf.image.random_flip_up_down(image)
+    image = tf.image.random_brightness(image, max_delta=0.3)
+    image = tf.image.random_contrast(image, lower=0.65, upper=1.35)
+    
+    imageCrop = crop(image, height, width)
+    image = tf.image.rgb_to_grayscale(imageCrop)
+    imgScharr = Scharr(image)
+    imgSobel = Sobel(image)
+    imgGabor = Gabor(image)
+    image = tf.image.per_image_standardization(image)
+    image = tf.squeeze(image, axis=-1)
+    
+    LL, LH, HL, HH = waveletFunction(image)
+    
+    LL_tensor = np.expand_dims(LL, axis=-1)
+    LH_tensor = np.expand_dims(LH, axis=-1)
+    HL_tensor = np.expand_dims(HL, axis=-1)
+    HH_tensor = np.expand_dims(HH, axis=-1)
+    imgScharr_tensor = np.expand_dims(imgScharr, axis=-1)
+    imgSobel_tensor = np.expand_dims(imgSobel, axis=-1)
+    imgGabor_tensor = np.expand_dims(imgGabor, axis=-1)
+    
+    LL_resized = resize(LL_tensor, height/8, width/8)
+    LH_resized = resize(LH_tensor, height/8, width/8)
+    HL_resized = resize(HL_tensor, height/8, width/8)
+    HH_resized = resize(HH_tensor, height/8, width/8)
+    imgScharr_resized = resize(imgScharr_tensor, height/8, width/8)
+    imgSobel_resized= resize(imgSobel_tensor, height/8, width/8)
+    imgGabor_resized = resize(imgGabor_tensor, height/8, width/8)
+        
+    return {
+        'LL_Input': LL_resized,
+        'LH_Input': LH_resized,
+        'HL_Input': HL_resized,
+        'HH_Input': HH_resized,
+        'Scharr_Input': imgScharr_resized,
+        'Sobel_Input': imgSobel_resized,
+        'Gabor_Input': imgGabor_resized
+    }
