@@ -25,7 +25,7 @@ def main(args):
     
     evaluateFolder(model, dirPath)
 
-def evaluateFolders(model, root, height, width):
+def evaluateFolders(model, root):
     i = 0
     warningsCnt = 0
     failCnt = 0

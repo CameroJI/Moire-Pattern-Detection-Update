@@ -58,18 +58,6 @@ def evaluateFolders(model, root, height, width):
                 
                 print(f'\n{idx+1}/{len(listdir(root))}\n')
                 
-                # try:
-                #     firtJson = elementsFromJson(getScoresFromJSON(join(dirPath, firtJson)))
-                #     print(firtJson)
-                #     createJson(firstJsonWrite, basename(root), basename(dirPath), first, score, ocurrences, prediction)
-                #     print()
-                #     lastJson = elementsFromJson(getScoresFromJSON(join(dirPath, lastJson)))
-                #     print(lastJson)
-                #     createJson(lastJsonWrite, basename(root), basename(dirPath), last, score, ocurrences, prediction)
-                #     print('--------------------------------------------')
-                # except:
-                #     continue
-                
 def elementsFromJson(jsonObject):
     scores = {'result_score': 0.0,'result_attack': 0.0, 'result_ocurrences': 0.0}
     #scores = {'result_attack': 0.0, 'result_ocurrences': 0.0}
